@@ -40,7 +40,7 @@ export function Navbar() {
             Войти
           </a>
           <a
-            href="/login"
+            href="/register"
             className="rounded-full bg-gold-gradient px-6 py-2.5 text-sm font-semibold text-background transition-all duration-300 hover:opacity-90 hover:shadow-lg"
           >
             Начать сейчас

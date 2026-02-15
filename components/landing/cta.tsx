@@ -50,7 +50,7 @@ export function CTA() {
 
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <a
-                  href="/login"
+                  href="/register"
                   className="group inline-flex items-center gap-3 rounded-full bg-gold-gradient px-10 py-4 text-base font-semibold text-background transition-all duration-300 hover:shadow-[0_0_40px_hsla(43,56%,55%,0.35)]"
                 >
                   <span>{"Зарегистрироваться"}</span>

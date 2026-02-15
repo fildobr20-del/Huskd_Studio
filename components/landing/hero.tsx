@@ -69,7 +69,7 @@ export function Hero() {
 
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <a
-            href="/login"
+            href="/register"
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-gold-gradient px-8 py-4 text-base font-semibold text-background transition-all duration-300 hover:shadow-[0_0_30px_hsla(43,56%,55%,0.3)]"
           >
             <span className="relative z-10">{"Начать зарабатывать"}</span>

@@ -25,16 +25,27 @@ export async function updateSession(request: NextRequest) {
     }
   )
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  const path = request.nextUrl.pathname
+
+  // Not logged in → redirect to login
+  if (!user && (path.startsWith("/dashboard") || path === "/onboarding")) {
     return NextResponse.redirect(`${siteUrl}/login`)
   }
-  if (user && request.nextUrl.pathname === "/login") {
+
+  // Logged in → redirect from login/register to dashboard
+  if (user && (path === "/login" || path === "/register")) {
+    const { data: profile } = await supabase.from("profiles").select("role, platform_nick").eq("id", user.id).single()
+    if (profile?.role === "model" && !profile?.platform_nick) {
+      return NextResponse.redirect(`${siteUrl}/onboarding`)
+    }
+    return NextResponse.redirect(`${siteUrl}/dashboard/${profile?.role === "recruiter" ? "recruiter" : "model"}`)
+  }
+
+  // Logged in on /dashboard root → redirect to correct dashboard
+  if (user && path === "/dashboard") {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
     return NextResponse.redirect(`${siteUrl}/dashboard/${profile?.role === "recruiter" ? "recruiter" : "model"}`)
   }
-  if (user && request.nextUrl.pathname === "/dashboard") {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-    return NextResponse.redirect(`${siteUrl}/dashboard/${profile?.role === "recruiter" ? "recruiter" : "model"}`)
-  }
+
   return response
 }
