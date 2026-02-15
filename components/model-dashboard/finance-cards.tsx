@@ -1,40 +1,64 @@
 "use client";
 
-import { DollarSign, TrendingUp, Calendar } from "lucide-react";
+import { useEffect, useState } from "react";
+import { DollarSign, TrendingUp, Calendar, Link2 } from "lucide-react";
 
-const cards = [
-  {
-    label: "Current Balance",
-    value: "$4,280.50",
-    change: "+$320 this week",
-    icon: DollarSign,
-    isPrimary: true,
-  },
-  {
-    label: "Total Lifetime Earnings",
-    value: "$87,412.00",
-    change: "+12% vs last month",
-    icon: TrendingUp,
-    isPrimary: false,
-  },
-  {
-    label: "Estimated Payout Date",
-    value: "Feb 15",
-    change: "Next payout in 5 days",
-    icon: Calendar,
-    isPrimary: false,
-  },
-];
+interface BalanceData {
+  totalGross: number;
+  modelShare: number;
+  platformBreakdown: { name: string; amount: number }[];
+  message?: string;
+}
 
 export function FinanceCards() {
+  const [data, setData] = useState<BalanceData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/balance")
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const balance = data?.modelShare ?? 0;
+  const gross = data?.totalGross ?? 0;
+  const hasNicks = !data?.message;
+
+  const cards = [
+    {
+      label: "Current Balance",
+      value: loading ? "..." : `$${balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      change: hasNicks ? "70% от общего дохода" : "Привяжите платформы",
+      icon: hasNicks ? DollarSign : Link2,
+      isPrimary: true,
+      link: hasNicks ? undefined : "/onboarding",
+    },
+    {
+      label: "Total Gross",
+      value: loading ? "..." : `$${gross.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      change: "Все платформы",
+      icon: TrendingUp,
+      isPrimary: false,
+    },
+    {
+      label: "Estimated Payout",
+      value: "Weekly",
+      change: "Каждый вторник",
+      icon: Calendar,
+      isPrimary: false,
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-4">
       {cards.map((card) => (
-        <div
+        <a
           key={card.label}
+          href={card.link}
           className={`glass-highlight glass-float relative overflow-hidden rounded-2xl ${
             card.isPrimary ? "glass-primary glass-shimmer" : "glass-raised"
-          }`}
+          } ${card.link ? "cursor-pointer ring-1 ring-primary/30" : ""}`}
         >
           <div className="relative z-10 flex items-start justify-between p-5 md:p-6">
             <div className="flex flex-col gap-1.5">
@@ -48,7 +72,7 @@ export function FinanceCards() {
               >
                 {card.value}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className={`text-xs ${card.link ? "text-primary font-medium" : "text-muted-foreground"}`}>
                 {card.change}
               </span>
             </div>
@@ -62,7 +86,7 @@ export function FinanceCards() {
               <card.icon className="h-5 w-5" />
             </div>
           </div>
-        </div>
+        </a>
       ))}
     </div>
   );
