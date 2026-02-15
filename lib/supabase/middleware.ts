@@ -1,6 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://huskdlabl.site"
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } })
   const supabase = createServerClient(
@@ -24,15 +26,15 @@ export async function updateSession(request: NextRequest) {
   )
   const { data: { user } } = await supabase.auth.getUser()
   if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    return NextResponse.redirect(`${siteUrl}/login`)
   }
   if (user && request.nextUrl.pathname === "/login") {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-    return NextResponse.redirect(new URL(profile?.role === "recruiter" ? "/dashboard/recruiter" : "/dashboard/model", request.url))
+    return NextResponse.redirect(`${siteUrl}/dashboard/${profile?.role === "recruiter" ? "recruiter" : "model"}`)
   }
   if (user && request.nextUrl.pathname === "/dashboard") {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-    return NextResponse.redirect(new URL(profile?.role === "recruiter" ? "/dashboard/recruiter" : "/dashboard/model", request.url))
+    return NextResponse.redirect(`${siteUrl}/dashboard/${profile?.role === "recruiter" ? "recruiter" : "model"}`)
   }
   return response
 }
