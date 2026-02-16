@@ -5,29 +5,20 @@ import Link from "next/link";
 import { DollarSign, TrendingUp, Calendar, Link2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-interface BalanceData {
-  totalGross: number;
-  modelShare: number;
-  platformBreakdown: { name: string; amount: number }[];
-  message?: string;
-}
-
 export function FinanceCards() {
-  const [data, setData] = useState<BalanceData | null>(null);
+  const [balance, setBalance] = useState(0);
   const [lifetime, setLifetime] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hasNicks, setHasNicks] = useState(false);
 
   useEffect(() => {
-    // Fetch current balance
     fetch("/api/balance")
       .then((r) => r.json())
       .then((d) => {
-        setData(d);
+        setBalance(d.modelShare ?? 0);
         setHasNicks(!d.message);
         setLoading(false);
 
-        // Update lifetime in profile
         if (d.modelShare > 0) {
           const supabase = createClient();
           supabase.auth.getUser().then(({ data: { user } }) => {
@@ -45,7 +36,6 @@ export function FinanceCards() {
       })
       .catch(() => setLoading(false));
 
-    // Also load lifetime
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -56,27 +46,25 @@ export function FinanceCards() {
     });
   }, []);
 
-  const balance = data?.modelShare ?? 0;
-
   const cards = [
     {
-      label: "CURRENT BALANCE",
+      label: "БАЛАНС",
       value: loading ? "..." : `$${balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-      change: hasNicks ? "70% от общего дохода" : "Привяжите платформы →",
+      change: hasNicks ? "К выводу" : "Привяжите платформы →",
       icon: hasNicks ? DollarSign : Link2,
       isPrimary: true,
       link: hasNicks ? undefined : "/onboarding",
     },
     {
-      label: "TOTAL LIFETIME",
+      label: "ЗА ВСЁ ВРЕМЯ",
       value: loading ? "..." : `$${lifetime.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-      change: "За всё время",
+      change: "Накопительный итог",
       icon: TrendingUp,
       isPrimary: false,
       link: undefined,
     },
     {
-      label: "PAYOUT SCHEDULE",
+      label: "ВЫПЛАТЫ",
       value: "Weekly",
       change: "Каждый вторник",
       icon: Calendar,
@@ -88,10 +76,8 @@ export function FinanceCards() {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-4">
       {cards.map((card) => {
-        const Wrapper = card.link ? Link : "div";
-        const wrapperProps = card.link ? { href: card.link } : {};
-        return (
-          <Wrapper key={card.label} {...(wrapperProps as any)} className={`glass-highlight glass-float relative overflow-hidden rounded-2xl ${card.isPrimary ? "glass-primary glass-shimmer" : "glass-raised"} ${card.link ? "cursor-pointer ring-1 ring-primary/30" : ""}`}>
+        const content = (
+          <div className={`glass-highlight glass-float relative overflow-hidden rounded-2xl ${card.isPrimary ? "glass-primary glass-shimmer" : "glass-raised"} ${card.link ? "cursor-pointer ring-1 ring-primary/30" : ""}`}>
             <div className="relative z-10 flex items-start justify-between p-5 md:p-6">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{card.label}</span>
@@ -102,8 +88,9 @@ export function FinanceCards() {
                 <card.icon className="h-5 w-5" />
               </div>
             </div>
-          </Wrapper>
+          </div>
         );
+        return card.link ? <Link key={card.label} href={card.link}>{content}</Link> : <div key={card.label}>{content}</div>;
       })}
     </div>
   );

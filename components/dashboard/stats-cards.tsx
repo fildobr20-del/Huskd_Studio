@@ -5,15 +5,18 @@ import { DollarSign, Users, TrendingUp, Percent } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 export function StatsCards() {
-  const [balance, setBalance] = useState(0)
+  const [commission, setCommission] = useState(0)
   const [lifetime, setLifetime] = useState(0)
+  const [modelCount, setModelCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/balance")
+    // Fetch recruiter models data
+    fetch("/api/recruiter-models")
       .then((r) => r.json())
       .then((d) => {
-        setBalance(d.recruiterShare || 0)
+        setCommission(d.recruiterCommission || 0)
+        setModelCount(d.totalModels || 0)
         setLoading(false)
 
         // Update lifetime
@@ -22,10 +25,11 @@ export function StatsCards() {
           if (user) {
             supabase.from("profiles").select("total_lifetime_earnings").eq("id", user.id).single().then(({ data: prof }) => {
               const current = prof?.total_lifetime_earnings || 0
-              if (d.recruiterShare > current) {
-                supabase.from("profiles").update({ total_lifetime_earnings: d.recruiterShare }).eq("id", user.id)
+              const newVal = d.recruiterCommission || 0
+              if (newVal > current) {
+                supabase.from("profiles").update({ total_lifetime_earnings: newVal }).eq("id", user.id)
               }
-              setLifetime(Math.max(current, d.recruiterShare))
+              setLifetime(Math.max(current, newVal))
             })
           }
         })
@@ -36,31 +40,27 @@ export function StatsCards() {
   const stats = [
     {
       title: "Current Balance",
-      value: loading ? "..." : `$${balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-      icon: DollarSign,
-      accent: "green" as const,
-      description: "Available for withdrawal",
+      value: loading ? "..." : `$${commission.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      icon: DollarSign, accent: "green" as const,
+      description: "К выводу",
     },
     {
-      title: "Active Models",
-      value: "0",
-      icon: Users,
-      accent: "purple" as const,
-      description: "Подключите моделей",
+      title: "Models",
+      value: loading ? "..." : `${modelCount}`,
+      icon: Users, accent: "purple" as const,
+      description: modelCount > 0 ? "Привлечено" : "Поделитесь ссылкой",
     },
     {
       title: "Lifetime Earnings",
       value: loading ? "..." : `$${lifetime.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-      icon: TrendingUp,
-      accent: "blue" as const,
+      icon: TrendingUp, accent: "blue" as const,
       description: "За всё время",
     },
     {
       title: "Commission Rate",
       value: "10%",
-      icon: Percent,
-      accent: "purple" as const,
-      description: "Standard recruiter tier",
+      icon: Percent, accent: "purple" as const,
+      description: "Ваша ставка",
     },
   ]
 
@@ -71,23 +71,21 @@ export function StatsCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {stats.map((stat) => {
         const colors = accentMap[stat.accent]
         return (
-          <div key={stat.title} className={`liquid-glass liquid-glass-hover liquid-shimmer relative overflow-hidden rounded-2xl p-5 transition-all duration-300 ${colors.glowClass} ${colors.borderAccent}`}>
+          <div key={stat.title} className={`liquid-glass liquid-glass-hover relative overflow-hidden rounded-2xl p-4 sm:p-5 transition-all duration-300 ${colors.glowClass} ${colors.borderAccent}`}>
             <div className={`pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full ${colors.orbColor} opacity-60 blur-2xl`} />
             <div className="relative z-10">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">{stat.title}</span>
-                <div className={`rounded-xl p-2.5 ${colors.iconBg}`}>
-                  <stat.icon className={`h-4 w-4 ${colors.iconColor}`} />
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">{stat.title}</span>
+                <div className={`rounded-lg p-2 ${colors.iconBg}`}>
+                  <stat.icon className={`h-3.5 w-3.5 ${colors.iconColor}`} />
                 </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className={`text-2xl font-bold tracking-tight ${colors.valueColor}`}>{stat.value}</span>
-                <span className="text-xs text-muted-foreground">{stat.description}</span>
-              </div>
+              <span className={`text-xl font-bold tracking-tight sm:text-2xl ${colors.valueColor}`}>{stat.value}</span>
+              <p className="mt-1 text-[11px] text-muted-foreground">{stat.description}</p>
             </div>
           </div>
         )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 
 function generateYearDays(): { date: string; dayOfWeek: number }[] {
   const days: { date: string; dayOfWeek: number }[] = []
@@ -18,21 +18,18 @@ function getColor(amount: number, avg: number): string {
   if (amount < avg * 0.5) return "bg-violet-900/40"
   if (amount < avg) return "bg-violet-700/50"
   if (amount < avg * 2) return "bg-violet-500/70"
-  return "bg-amber-400/80" // jackpot day
+  return "bg-amber-400/80"
 }
 
 export function EarningsHeatmap() {
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null)
-  
+  const [tooltip, setTooltip] = useState<{ text: string; top: number; left: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
   const days = useMemo(() => generateYearDays(), [])
-  
-  // For now, all days are 0 — will fill from API when history is available
   const dayData: Record<string, number> = {}
-  
   const activeDays = Object.values(dayData).filter((v) => v > 0).length
   const avg = activeDays > 0 ? Object.values(dayData).reduce((s, v) => s + v, 0) / activeDays : 0
 
-  // Calculate streak
   let currentStreak = 0
   let longestStreak = 0
   let tempStreak = 0
@@ -40,44 +37,48 @@ export function EarningsHeatmap() {
     const amt = dayData[days[i].date] || 0
     if (amt > 0) {
       tempStreak++
-      if (i === days.length - 1 || currentStreak > 0) currentStreak = tempStreak
+      if (currentStreak === 0 || i === days.length - 1 - currentStreak) currentStreak = tempStreak
     } else {
       if (tempStreak > longestStreak) longestStreak = tempStreak
       tempStreak = 0
-      if (currentStreak === 0) currentStreak = 0
     }
   }
   if (tempStreak > longestStreak) longestStreak = tempStreak
 
-  // Group by weeks (columns)
   const weeks: { date: string; dayOfWeek: number }[][] = []
   let currentWeek: { date: string; dayOfWeek: number }[] = []
-  
-  // Pad first week
   if (days[0]?.dayOfWeek > 0) {
     for (let i = 0; i < days[0].dayOfWeek; i++) {
       currentWeek.push({ date: "", dayOfWeek: i })
     }
   }
-  
   for (const day of days) {
     currentWeek.push(day)
-    if (day.dayOfWeek === 6) {
-      weeks.push(currentWeek)
-      currentWeek = []
-    }
+    if (day.dayOfWeek === 6) { weeks.push(currentWeek); currentWeek = [] }
   }
   if (currentWeek.length > 0) weeks.push(currentWeek)
 
+  const handleMouseEnter = (e: React.MouseEvent, day: { date: string }) => {
+    const amt = dayData[day.date] || 0
+    const rect = e.currentTarget.getBoundingClientRect()
+    const containerRect = containerRef.current?.getBoundingClientRect()
+    if (!containerRect) return
+    setTooltip({
+      text: `${day.date}: $${amt.toFixed(0)}${amt > 0 ? ` · +${(amt * 10).toFixed(0)} XP` : ""}`,
+      top: rect.top - containerRect.top - 32,
+      left: rect.left - containerRect.left + rect.width / 2,
+    })
+  }
+
   return (
-    <div className="glass glass-highlight rounded-2xl p-5 md:p-6">
+    <div className="glass glass-highlight rounded-2xl p-5 md:p-6" ref={containerRef} style={{ position: "relative" }}>
       <div className="mb-4">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Календарь доходов</h3>
         <p className="text-[11px] text-muted-foreground">365 дней — каждый квадрат = 1 день</p>
       </div>
-      
+
       <div className="overflow-x-auto pb-2">
-        <div className="flex gap-[2px]" style={{ minWidth: "700px" }}>
+        <div className="flex gap-[2px]" style={{ minWidth: "600px" }}>
           {weeks.map((week, wi) => (
             <div key={wi} className="flex flex-col gap-[2px]">
               {week.map((day, di) => {
@@ -88,14 +89,7 @@ export function EarningsHeatmap() {
                   <div
                     key={di}
                     className={`h-[11px] w-[11px] rounded-[2px] ${color} transition-all hover:ring-1 hover:ring-primary/40 cursor-pointer`}
-                    onMouseEnter={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect()
-                      setTooltip({
-                        x: rect.left + rect.width / 2,
-                        y: rect.top - 8,
-                        text: `${day.date}: $${amt.toFixed(0)}${amt > 0 ? ` · +${(amt * 10).toFixed(0)} XP` : ""}`,
-                      })
-                    }}
+                    onMouseEnter={(e) => handleMouseEnter(e, day)}
                     onMouseLeave={() => setTooltip(null)}
                   />
                 )
@@ -104,18 +98,21 @@ export function EarningsHeatmap() {
           ))}
         </div>
       </div>
-      
+
       {tooltip && (
-        <div className="fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg bg-background/95 border border-border px-3 py-1.5 text-[11px] text-foreground shadow-lg pointer-events-none" style={{ left: tooltip.x, top: tooltip.y }}>
+        <div
+          className="absolute z-50 -translate-x-1/2 rounded-lg bg-background/95 border border-border px-3 py-1.5 text-[11px] text-foreground shadow-lg pointer-events-none whitespace-nowrap"
+          style={{ top: tooltip.top, left: tooltip.left }}
+        >
           {tooltip.text}
         </div>
       )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <span>🔥 Streak: <strong className="text-foreground">{currentStreak} дн.</strong></span>
           <span>🏆 Рекорд: <strong className="text-foreground">{longestStreak} дн.</strong></span>
-          <span>📅 Дней активных: <strong className="text-foreground">{activeDays}</strong></span>
+          <span>📅 Активных: <strong className="text-foreground">{activeDays}</strong></span>
         </div>
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <span>Мало</span>
