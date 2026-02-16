@@ -30,12 +30,20 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center gap-4 border-t border-border/50 pt-8 md:flex-row md:justify-between">
-          <p className="text-xs text-muted-foreground">
-            {"© 2019–2026 Husk'd Labl. Все права защищены."}
+        <div className="mt-10 flex flex-col items-center gap-4 border-t border-border/50 pt-8">
+          <p className="text-sm text-muted-foreground text-center">
+            {"Остались вопросы? Наши саппорты ответят на все ваши вопросы."}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {"Твой надёжный партнёр в вебкам-индустрии"}
+          <div className="flex gap-4">
+            <a href="https://t.me/usernamesks" target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#229ED9] px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+              Telegram
+            </a>
+            <a href="https://wa.me/79531817113" target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#25D366] px-6 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+              WhatsApp
+            </a>
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            {"© 2019–2026 Husk'd Labl. Все права защищены."}
           </p>
         </div>
       </div>

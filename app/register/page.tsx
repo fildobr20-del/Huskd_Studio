@@ -1,16 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Mail, ArrowLeft, Loader2, CheckCircle2, Copy, Check, User, Users } from "lucide-react"
 
-export default function RegisterPage() {
+function RegisterForm() {
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<"model" | "recruiter" | "">("")
   const [loading, setLoading] = useState(false)
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
+  const [refCode, setRefCode] = useState("")
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const ref = searchParams.get("ref")
+    if (ref) setRefCode(ref)
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,7 +30,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, refCode }),
       })
       const data = await res.json()
 
@@ -105,6 +113,11 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-muted-foreground">Укажите код друга (если есть)</label>
+                  <input type="text" value={refCode} onChange={(e) => setRefCode(e.target.value)} placeholder="Реферальный код" className="w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                </div>
+
                 {error && <p className="text-sm text-destructive">{error}</p>}
 
                 <button type="submit" disabled={loading} className="flex items-center justify-center gap-2 rounded-full bg-gold-gradient py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-50">
@@ -143,5 +156,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+      <RegisterForm />
+    </Suspense>
   )
 }

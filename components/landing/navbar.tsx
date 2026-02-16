@@ -21,7 +21,7 @@ export function Navbar() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6">
         <a href="#" className="flex items-center gap-3">
           <Image
-            src="/logo.jpg"
+            src="/logo.svg"
             alt="Husk'd Labl логотип"
             width={40}
             height={40}

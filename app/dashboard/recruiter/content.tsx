@@ -19,7 +19,7 @@ export function RecruiterContent() {
       <DashboardHeader />
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
         <div className="mb-8 lg:mb-10">
-          <h1 className="text-balance text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Welcome back, John</h1>
+          <h1 className="text-balance text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Welcome back</h1>
           <p className="mt-1 text-sm text-muted-foreground">{"Here's an overview of your recruitment performance"}</p>
         </div>
         <section aria-label="Key metrics" className="mb-8 lg:mb-10"><StatsCards /></section>

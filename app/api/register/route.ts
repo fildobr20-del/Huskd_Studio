@@ -12,7 +12,7 @@ function generatePassword(length = 10): string {
 
 export async function POST(request: Request) {
   try {
-    const { email, role } = await request.json()
+    const { email, role, refCode } = await request.json()
 
     if (!email || !role || !["model", "recruiter"].includes(role)) {
       return NextResponse.json({ error: "Неверные данные" }, { status: 400 })
@@ -45,6 +45,21 @@ export async function POST(request: Request) {
     // We'll use the invite method to trigger an email, but since we auto-confirmed,
     // we send a custom approach: use the resetPasswordForEmail to send a "welcome" style email
     // Actually, simplest: just show password on screen + send via API
+
+    // Link to recruiter if refCode provided
+    if (refCode && userData.user) {
+      const { data: recruiter } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("referral_code", refCode)
+        .single()
+      if (recruiter) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({ recruited_by: recruiter.id })
+          .eq("id", userData.user.id)
+      }
+    }
 
     return NextResponse.json({
       success: true,
