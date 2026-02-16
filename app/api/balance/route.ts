@@ -103,12 +103,28 @@ export async function GET(request: Request) {
     // Get user profile with platform nicks
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, platform_nick, platform_nicks")
+      .select("role, platform_nick, platform_nicks, is_demo")
       .eq("id", user.id)
       .single()
 
     if (!profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 })
+    }
+
+    // Demo account — return fake high numbers for presentation
+    if (profile.is_demo) {
+      return NextResponse.json({
+        totalGross: 6120.50,
+        modelShare: 4284.35,
+        recruiterShare: 612.05,
+        platformBreakdown: [
+          { name: "Chaturbate", amount: 2450.00, tokens: 49000 },
+          { name: "StripChat", amount: 1890.50, tokens: 37810 },
+          { name: "BongaCams", amount: 1120.00, tokens: 44800 },
+          { name: "SkyPrivate", amount: 420.00, tokens: 0 },
+          { name: "Flirt4Free", amount: 240.00, tokens: 0 },
+        ],
+      })
     }
 
     let nicks: Record<string, string> = {}

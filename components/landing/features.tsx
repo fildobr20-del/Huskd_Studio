@@ -71,7 +71,7 @@ export function Features() {
           <span className="mb-4 inline-block text-sm font-medium uppercase tracking-[0.2em] text-primary">
             {"Что мы предлагаем"}
           </span>
-          <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+          <h2 className="font-serif text-2xl font-bold text-foreground sm:text-4xl md:text-5xl">
             {"Всё для твоего "}
             <span className="text-gold">{"успеха"}</span>
           </h2>

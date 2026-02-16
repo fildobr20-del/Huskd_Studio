@@ -94,6 +94,9 @@ export default function OnboardingPage() {
             <button type="submit" disabled={loading} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-gold-gradient py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-50">
               {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Сохранение...</> : <><CheckCircle2 className="h-4 w-4" /> Сохранить и перейти в кабинет</>}
             </button>
+            <button type="button" onClick={() => router.push("/dashboard/model")} className="flex items-center justify-center rounded-full border border-border py-2.5 text-sm text-muted-foreground transition hover:text-foreground hover:border-foreground/20">
+              Добавлю позже
+            </button>
           </form>
         </div>
       </div>

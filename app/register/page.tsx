@@ -1,18 +1,17 @@
 "use client"
 
-import { Suspense, useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Mail, ArrowLeft, Loader2, CheckCircle2, Copy, Check, User, Users } from "lucide-react"
 
-function RegisterContent() {
+export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<"model" | "recruiter" | "">("")
   const [loading, setLoading] = useState(false)
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [refCode, setRefCode] = useState("")
-  const [copied, setCopied] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -156,13 +155,5 @@ function RegisterContent() {
         </div>
       </div>
     </div>
-  )
-}
-
-export default function RegisterPage() {
-  return (
-    <Suspense fallback={null}>
-      <RegisterContent />
-    </Suspense>
   )
 }

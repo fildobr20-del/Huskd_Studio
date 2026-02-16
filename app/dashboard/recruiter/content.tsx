@@ -7,6 +7,7 @@ import { ReferralTools } from "@/components/dashboard/referral-tools"
 import { ModelsTable } from "@/components/dashboard/models-table"
 import { LevelProgress } from "@/components/gamification/level-progress"
 import { AchievementsPreview } from "@/components/gamification/achievements-preview"
+import { EarningsHeatmap } from "@/components/gamification/earnings-heatmap"
 
 export function RecruiterContent() {
   return (
@@ -31,6 +32,7 @@ export function RecruiterContent() {
           <section><ModelsTable /></section>
           <section><AchievementsPreview role="recruiter" /></section>
         </div>
+        <section className="mb-8"><EarningsHeatmap /></section>
         <p className="text-center text-[11px] text-muted-foreground/50 mb-4">
           Chaturbate, StripChat, BongaCams — обновляются ежедневно. Flirt4Free, SkyPrivate, XModels — синхронизируются по вторникам.
         </p>

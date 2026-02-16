@@ -40,7 +40,7 @@ export function Steps() {
           <span className="mb-4 inline-block text-sm font-medium uppercase tracking-[0.2em] text-primary">
             {"5 простых шагов"}
           </span>
-          <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl text-balance">
+          <h2 className="font-serif text-2xl font-bold text-foreground sm:text-4xl md:text-5xl text-balance">
             {"Как быстро начать зарабатывать с "}
             <span className="text-gold">{"Husk'd Labl"}</span>
           </h2>

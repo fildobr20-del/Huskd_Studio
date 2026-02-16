@@ -67,7 +67,7 @@ export function Stats() {
           <span className="mb-4 inline-block text-sm font-medium uppercase tracking-[0.2em] text-primary">
             {"Наши результаты"}
           </span>
-          <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+          <h2 className="font-serif text-2xl font-bold text-foreground sm:text-4xl md:text-5xl">
             {"Цифры говорят "}
             <span className="text-gold">{"сами за себя"}</span>
           </h2>
@@ -79,7 +79,7 @@ export function Stats() {
               key={stat.label}
               className="group rounded-2xl glass-gold p-8 text-center transition-all duration-500 hover:glow-gold"
             >
-              <div className="text-gold font-serif text-5xl font-bold md:text-6xl">
+              <div className="text-gold font-serif text-3xl font-bold sm:text-5xl md:text-6xl">
                 {i === 2 ? (
                   <>
                     {"50–"}

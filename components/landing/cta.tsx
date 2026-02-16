@@ -38,7 +38,7 @@ export function CTA() {
                 </span>
               </div>
 
-              <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl lg:text-6xl text-balance">
+              <h2 className="font-serif text-2xl font-bold text-foreground sm:text-4xl md:text-5xl lg:text-6xl text-balance">
                 {"Готова начать "}
                 <span className="text-gold">{"зарабатывать"}</span>
                 {"?"}

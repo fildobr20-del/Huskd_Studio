@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
   // Logged in → redirect from login/register to dashboard
   if (user && (path === "/login" || path === "/register")) {
     const { data: profile } = await supabase.from("profiles").select("role, platform_nick").eq("id", user.id).single()
-    if (profile?.role === "model" && !profile?.platform_nick) {
+    if (profile?.role === "model" && !profile?.platform_nick && path.startsWith("/dashboard")) {
       return NextResponse.redirect(`${siteUrl}/onboarding`)
     }
     return NextResponse.redirect(`${siteUrl}/dashboard/${profile?.role === "recruiter" ? "recruiter" : "model"}`)

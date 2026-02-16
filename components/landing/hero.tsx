@@ -18,7 +18,7 @@ export function Hero() {
   }, [])
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-6">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 sm:px-6">
       {/* Background orbs */}
       <div className="pointer-events-none absolute inset-0">
         <div
@@ -53,7 +53,7 @@ export function Hero() {
           </span>
         </div>
 
-        <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight md:text-7xl lg:text-8xl">
+        <h1 className="font-serif text-3xl font-bold leading-tight tracking-tight sm:text-5xl md:text-7xl lg:text-8xl">
           <span className="text-foreground">{"Твой путь к "}</span>
           <span className="text-gold">{"высокому"}</span>
           <br />
