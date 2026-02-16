@@ -1,11 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Mail, ArrowLeft, Loader2, CheckCircle2, Copy, Check, User, Users } from "lucide-react"
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
+  )
+}
+
+function RegisterContent() {
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<"model" | "recruiter" | "">("")
   const [loading, setLoading] = useState(false)
