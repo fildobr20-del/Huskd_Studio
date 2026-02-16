@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [refCode, setRefCode] = useState("")
+  const [copied, setCopied] = useState(false)
   const searchParams = useSearchParams()
 
   useEffect(() => {
