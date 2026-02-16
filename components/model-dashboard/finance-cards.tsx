@@ -47,6 +47,7 @@ export function FinanceCards() {
       change: "Каждый вторник",
       icon: Calendar,
       isPrimary: false,
+      link: undefined,
     },
   ];
 

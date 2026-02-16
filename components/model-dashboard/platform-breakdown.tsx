@@ -74,6 +74,9 @@ export function PlatformBreakdown() {
           );
         })}
       </div>
+      <p className="mt-4 text-[10px] text-muted-foreground/40 text-center">
+        Chaturbate, StripChat, BongaCams — ежедневно · Flirt4Free, SkyPrivate, XModels — по вторникам
+      </p>
     </div>
   );
 }

@@ -9,7 +9,7 @@ export function DashboardHeader() {
   return (
     <header className="glass-header sticky top-0 z-50 flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
       <div className="flex items-center gap-3">
-        <Image src="/logo.svg" alt="Husk'd Label" width={40} height={40} className="rounded-xl" />
+        <Image src="/logo-purple.svg" alt="Husk'd Label" width={40} height={40} className="rounded-xl" />
         <div>
           <h1 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">{"Husk'd Label"}</h1>
           <p className="text-xs text-muted-foreground">Model Dashboard</p>

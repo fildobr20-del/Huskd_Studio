@@ -11,7 +11,7 @@ export function DashboardHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <Image src="/logo.svg" alt="Husk'd Label" width={36} height={36} className="rounded-xl" />
+            <Image src="/logo-purple.svg" alt="Husk'd Label" width={36} height={36} className="rounded-xl" />
             <div>
               <p className="text-sm font-semibold text-foreground">{"Husk'd Label"}</p>
               <p className="text-xs text-muted-foreground">Recruiter Portal</p>
