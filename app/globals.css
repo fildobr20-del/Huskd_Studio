@@ -1,0 +1,196 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 270 30% 6%;
+    --foreground: 45 30% 90%;
+    --card: 270 25% 10%;
+    --card-foreground: 45 30% 90%;
+    --popover: 270 25% 10%;
+    --popover-foreground: 45 30% 90%;
+    --primary: 43 56% 55%;
+    --primary-foreground: 270 30% 6%;
+    --secondary: 270 20% 15%;
+    --secondary-foreground: 45 30% 90%;
+    --muted: 270 18% 14%;
+    --muted-foreground: 270 10% 55%;
+    --accent: 275 40% 25%;
+    --accent-foreground: 45 30% 92%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 270 15% 18%;
+    --input: 270 15% 18%;
+    --ring: 43 56% 55%;
+    --chart-1: 43 56% 55%;
+    --chart-2: 275 40% 45%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.75rem;
+    --sidebar-background: 270 25% 8%;
+    --sidebar-foreground: 45 30% 90%;
+    --sidebar-primary: 43 56% 55%;
+    --sidebar-primary-foreground: 270 30% 6%;
+    --sidebar-accent: 270 20% 15%;
+    --sidebar-accent-foreground: 45 30% 90%;
+    --sidebar-border: 270 15% 18%;
+    --sidebar-ring: 43 56% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: linear-gradient(
+      135deg,
+      hsla(270, 25%, 15%, 0.6) 0%,
+      hsla(275, 40%, 18%, 0.3) 50%,
+      hsla(270, 25%, 12%, 0.5) 100%
+    );
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsla(270, 15%, 30%, 0.3);
+  }
+  .glass-gold {
+    background: linear-gradient(
+      135deg,
+      hsla(43, 56%, 55%, 0.08) 0%,
+      hsla(275, 40%, 25%, 0.1) 50%,
+      hsla(43, 56%, 55%, 0.05) 100%
+    );
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsla(43, 56%, 55%, 0.15);
+  }
+  .text-gold {
+    background: linear-gradient(135deg, #D4A843 0%, #E8C76A 50%, #C9A84C 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, #D4A843 0%, #E8C76A 50%, #C9A84C 100%);
+  }
+  .glow-gold {
+    box-shadow: 0 0 30px hsla(43, 56%, 55%, 0.15), 0 0 60px hsla(43, 56%, 55%, 0.05);
+  }
+  .glow-purple {
+    box-shadow: 0 0 40px hsla(275, 60%, 40%, 0.15), 0 0 80px hsla(275, 60%, 40%, 0.05);
+  }
+}
+
+/* ============================================
+   RECRUITER DASHBOARD THEME (from Recruter/)
+   Applied via data-theme="recruiter"
+   ============================================ */
+[data-theme="recruiter"] {
+  --background: 228 14% 6%;
+  --foreground: 210 20% 95%;
+  --card: 225 12% 10%;
+  --card-foreground: 210 20% 95%;
+  --popover: 225 12% 10%;
+  --popover-foreground: 210 20% 95%;
+  --primary: 258 90% 66%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 225 10% 14%;
+  --secondary-foreground: 210 15% 85%;
+  --muted: 225 10% 16%;
+  --muted-foreground: 225 8% 50%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 225 10% 18%;
+  --input: 225 10% 18%;
+  --ring: 258 90% 66%;
+  --chart-1: 258 90% 66%;
+  --chart-2: 217 91% 60%;
+  --chart-3: 160 84% 60%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+  --radius: 1rem;
+}
+
+/* ============================================
+   MODEL DASHBOARD THEME (from model/)
+   Applied via data-theme="model"
+   ============================================ */
+[data-theme="model"] {
+  --background: 240 6% 7%;
+  --foreground: 0 0% 95%;
+  --card: 240 5% 10%;
+  --card-foreground: 0 0% 95%;
+  --popover: 240 5% 12%;
+  --popover-foreground: 0 0% 95%;
+  --primary: 346 60% 65%;
+  --primary-foreground: 240 6% 7%;
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 0 0% 90%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 55%;
+  --accent: 346 60% 65%;
+  --accent-foreground: 240 6% 7%;
+  --destructive: 0 62.8% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 4% 18%;
+  --input: 240 4% 18%;
+  --ring: 346 60% 65%;
+  --chart-1: 346 60% 65%;
+  --chart-2: 346 40% 50%;
+  --chart-3: 240 5% 55%;
+  --chart-4: 346 70% 75%;
+  --chart-5: 200 60% 55%;
+  --radius: 1rem;
+}
+
+/* ── Recruiter Liquid Glass (from Recruter/globals.css) ── */
+@layer components {
+  .liquid-glass { position:relative; background:linear-gradient(145deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.02) 50%,rgba(255,255,255,0.05) 100%); backdrop-filter:blur(40px) saturate(1.8) brightness(1.1); -webkit-backdrop-filter:blur(40px) saturate(1.8) brightness(1.1); border:1px solid rgba(255,255,255,0.12); box-shadow:0 8px 32px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.1); transition:all 0.4s cubic-bezier(0.4,0,0.2,1); }
+  .liquid-glass::before { content:''; position:absolute; inset:0; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,0.06) 0%,transparent 40%,transparent 60%,rgba(255,255,255,0.03) 100%); pointer-events:none; z-index:1; }
+  .liquid-glass-elevated { position:relative; background:linear-gradient(145deg,rgba(255,255,255,0.1) 0%,rgba(255,255,255,0.03) 40%,rgba(255,255,255,0.06) 100%); backdrop-filter:blur(60px) saturate(2) brightness(1.15); -webkit-backdrop-filter:blur(60px) saturate(2) brightness(1.15); border:1px solid rgba(255,255,255,0.15); box-shadow:0 20px 60px rgba(0,0,0,0.5),0 8px 24px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.15); }
+  .liquid-glass-inset { position:relative; background:linear-gradient(145deg,rgba(0,0,0,0.2) 0%,rgba(255,255,255,0.02) 50%,rgba(0,0,0,0.1) 100%); backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4); border:1px solid rgba(255,255,255,0.05); box-shadow:inset 0 2px 8px rgba(0,0,0,0.3),0 1px 0 rgba(255,255,255,0.05); }
+  .liquid-glass-hover:hover { transform:translateY(-2px) scale(1.005); border-color:rgba(255,255,255,0.18); }
+  .liquid-glow-purple { box-shadow:0 8px 32px rgba(139,92,246,0.12),0 2px 8px rgba(0,0,0,0.3),inset 0 1px 0 rgba(139,92,246,0.08); }
+  .liquid-glow-blue { box-shadow:0 8px 32px rgba(59,130,246,0.12),0 2px 8px rgba(0,0,0,0.3),inset 0 1px 0 rgba(59,130,246,0.08); }
+  .liquid-glow-green { box-shadow:0 8px 32px rgba(52,211,153,0.12),0 2px 8px rgba(0,0,0,0.3),inset 0 1px 0 rgba(52,211,153,0.08); }
+  .liquid-shimmer::after { content:''; position:absolute; top:0; left:-20%; width:40%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent); transform:skewX(-15deg); pointer-events:none; z-index:2; transition:left 0.6s ease; }
+  .liquid-shimmer:hover::after { left:120%; }
+  .ambient-orb { position:absolute; border-radius:9999px; filter:blur(80px); pointer-events:none; }
+  @keyframes orb-float { 0%,100%{transform:translate(0,0) scale(1);} 25%{transform:translate(10px,-15px) scale(1.05);} 50%{transform:translate(-5px,10px) scale(0.95);} 75%{transform:translate(15px,5px) scale(1.02);} }
+  @keyframes orb-float-slow { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(-20px,10px) scale(1.08);} 66%{transform:translate(10px,-20px) scale(0.96);} }
+  @keyframes orb-pulse { 0%,100%{opacity:0.6;transform:scale(1);} 50%{opacity:1;transform:scale(1.1);} }
+}
+
+/* ── Model Glass (from model/globals.css) ── */
+.glass-raised { background:linear-gradient(145deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.03) 40%,rgba(212,115,140,0.05) 100%); backdrop-filter:blur(32px) saturate(1.6); -webkit-backdrop-filter:blur(32px) saturate(1.6); border:1px solid rgba(255,255,255,0.1); box-shadow:0 16px 48px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.12); }
+.glass-primary { background:linear-gradient(145deg,rgba(212,115,140,0.12) 0%,rgba(212,115,140,0.04) 40%,rgba(255,255,255,0.04) 100%); backdrop-filter:blur(32px) saturate(1.8); border:1px solid rgba(212,115,140,0.2); }
+.glass-inset { background:linear-gradient(160deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.01) 100%); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.05); box-shadow:inset 0 2px 8px rgba(0,0,0,0.15); }
+.glass-header { background:linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.02) 100%); backdrop-filter:blur(40px) saturate(1.5); border-bottom:1px solid rgba(255,255,255,0.06); box-shadow:0 4px 24px rgba(0,0,0,0.2); }
+.glass-pill { background:linear-gradient(135deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.03) 100%); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,0.08); box-shadow:0 2px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.06); }
+.glass-highlight::before { content:""; position:absolute; inset:0; border-radius:inherit; background:linear-gradient(180deg,rgba(255,255,255,0.08) 0%,transparent 40%); pointer-events:none; z-index:1; }
+.glass-float { transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.4s ease; }
+.glass-float:hover { transform:translateY(-2px); box-shadow:0 20px 56px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.14); }
+@keyframes orbit-1 { 0%,100%{transform:translate(0,0) scale(1);} 25%{transform:translate(30px,-20px) scale(1.1);} 50%{transform:translate(-10px,30px) scale(0.95);} 75%{transform:translate(-30px,-10px) scale(1.05);} }
+@keyframes orbit-2 { 0%,100%{transform:translate(0,0) scale(1);} 25%{transform:translate(-25px,25px) scale(1.05);} 50%{transform:translate(20px,-15px) scale(1.1);} 75%{transform:translate(15px,20px) scale(0.95);} }
+.ambient-orb-1 { animation:orbit-1 20s ease-in-out infinite; }
+.ambient-orb-2 { animation:orbit-2 25s ease-in-out infinite; }
