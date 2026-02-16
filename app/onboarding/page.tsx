@@ -9,7 +9,8 @@ const platforms = [
   { id: "chaturbate", name: "Chaturbate", color: "#f68b24" },
   { id: "stripchat", name: "StripChat", color: "#e74c3c" },
   { id: "bongacams", name: "BongaCams", color: "#9b59b6" },
-  { id: "myfreecams", name: "MyFreeCams", color: "#3498db" },
+  { id: "skyprivate", name: "SkyPrivate", color: "#3498db" },
+  { id: "flirt4free", name: "Flirt4Free", color: "#e91e8c" },
 ]
 
 export default function OnboardingPage() {

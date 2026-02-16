@@ -6,7 +6,7 @@ import { EarningsChart } from "@/components/dashboard/earnings-chart"
 import { ReferralTools } from "@/components/dashboard/referral-tools"
 import { ModelsTable } from "@/components/dashboard/models-table"
 import { LevelProgress } from "@/components/gamification/level-progress"
-import { Achievements } from "@/components/gamification/achievements"
+import { AchievementsPreview } from "@/components/gamification/achievements-preview"
 
 export function RecruiterContent() {
   return (
@@ -29,7 +29,7 @@ export function RecruiterContent() {
         </div>
         <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <section><ModelsTable /></section>
-          <section><Achievements role="recruiter" /></section>
+          <section><AchievementsPreview role="recruiter" /></section>
         </div>
         <p className="text-center text-[11px] text-muted-foreground/50 mb-4">
           Chaturbate, StripChat, BongaCams — обновляются ежедневно. Flirt4Free, SkyPrivate, XModels — синхронизируются по вторникам.
@@ -37,11 +37,8 @@ export function RecruiterContent() {
       </main>
       <footer className="relative py-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="liquid-glass-inset rounded-2xl px-6 py-4">
-            <div className="flex flex-col items-center justify-between gap-2 text-xs text-muted-foreground sm:flex-row">
-              <p>{"Husk'd Label Recruiter Portal"}</p>
-              <p>{"All amounts in USD"}</p>
-            </div>
+          <div className="liquid-glass-inset rounded-2xl px-6 py-4 text-center text-xs text-muted-foreground">
+            {"Husk'd Label"} &middot; All amounts in USD
           </div>
         </div>
       </footer>

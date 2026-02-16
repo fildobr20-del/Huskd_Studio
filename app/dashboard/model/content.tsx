@@ -7,16 +7,30 @@ import { PlatformBreakdown } from "@/components/model-dashboard/platform-breakdo
 import { WeeklyChart } from "@/components/model-dashboard/weekly-chart"
 import { ModelReferral } from "@/components/model-dashboard/model-referral"
 import { LevelProgress } from "@/components/gamification/level-progress"
-import { Achievements } from "@/components/gamification/achievements"
+import { AchievementsPreview } from "@/components/gamification/achievements-preview"
+import { EarningsHeatmap } from "@/components/gamification/earnings-heatmap"
+import { GhostChart } from "@/components/gamification/ghost-chart"
+import { createClient } from "@/lib/supabase/client"
 
 export function ModelContent() {
-  const [hasEarnings, setHasEarnings] = useState(false)
+  const [hasPlatforms, setHasPlatforms] = useState(true)
 
   useEffect(() => {
-    fetch("/api/balance")
-      .then((r) => r.json())
-      .then((d) => { if (d.totalGross > 0) setHasEarnings(true) })
-      .catch(() => {})
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("profiles").select("platform_nicks").eq("id", user.id).single().then(({ data }) => {
+          if (data?.platform_nicks) {
+            try {
+              const nicks = typeof data.platform_nicks === "string" ? JSON.parse(data.platform_nicks) : data.platform_nicks
+              setHasPlatforms(Object.keys(nicks).length > 0)
+            } catch { setHasPlatforms(false) }
+          } else {
+            setHasPlatforms(false)
+          }
+        })
+      }
+    })
   }, [])
 
   return (
@@ -29,27 +43,32 @@ export function ModelContent() {
         <DashboardHeader />
         <main className="flex-1 px-4 py-5 md:px-6 md:py-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-5 md:gap-6">
-            {!hasEarnings && (
+            {!hasPlatforms && (
               <div className="glass rounded-xl border border-primary/20 px-4 py-3 text-center text-sm text-primary">
                 Для начала работы пройдите верификацию. Нажмите кнопку <strong>Contact Mentor</strong> чтобы связаться с вашим наставником.
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-foreground md:text-2xl">Welcome back</h2>
-                <p className="text-sm text-muted-foreground">{"Обзор вашего заработка"}</p>
-              </div>
+            <div>
+              <h2 className="text-xl font-semibold text-foreground md:text-2xl">Welcome back</h2>
+              <p className="text-sm text-muted-foreground">Обзор вашего заработка</p>
             </div>
+
             <FinanceCards />
             <LevelProgress role="model" />
+
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 md:gap-6">
               <div className="lg:col-span-3"><WeeklyChart /></div>
               <div className="lg:col-span-2"><PlatformBreakdown /></div>
             </div>
+
+            <GhostChart />
+            <EarningsHeatmap />
+
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 md:gap-6">
               <ModelReferral />
-              <Achievements role="model" />
+              <AchievementsPreview role="model" />
             </div>
+
             <p className="text-center text-[11px] text-muted-foreground/50">
               Chaturbate, StripChat, BongaCams — обновляются ежедневно. Flirt4Free, SkyPrivate, XModels — синхронизируются по вторникам.
             </p>
