@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react"
 import { Star } from "lucide-react"
 
-// XP = 1000 * (Level ^ 2.2), where $1 earned = 10 XP
+// XP = 150 * level^2, where $1 = 10 XP
+// Level 1 = $15, Level 50 = $37,500, Level 100 = $150,000
 function xpForLevel(level: number): number {
-  return Math.round(1000 * Math.pow(level, 2.2))
+  return Math.round(150 * Math.pow(level, 2))
 }
 
 function getLevelFromXP(xp: number): number {
@@ -27,20 +28,26 @@ export function LevelProgress({ role }: { role: "model" | "recruiter" }) {
   const [totalEarnings, setTotalEarnings] = useState(0)
 
   useEffect(() => {
-    fetch("/api/balance")
-      .then((r) => r.json())
-      .then((d) => {
-        setTotalEarnings(role === "model" ? (d.modelShare || 0) : (d.recruiterShare || 0))
-      })
-      .catch(() => {})
+    if (role === "recruiter") {
+      fetch("/api/recruiter-models")
+        .then((r) => r.json())
+        .then((d) => setTotalEarnings(d.recruiterCommission || 0))
+        .catch(() => {})
+    } else {
+      fetch("/api/balance")
+        .then((r) => r.json())
+        .then((d) => setTotalEarnings(d.modelShare || 0))
+        .catch(() => {})
+    }
   }, [role])
 
-  const xp = Math.round(totalEarnings * 10) // $1 = 10 XP
+  const xp = Math.round(totalEarnings * 10)
   const level = getLevelFromXP(xp)
   const tier = getTier(level)
   const currentLevelXP = xpForLevel(level)
-  const nextLevelXP = xpForLevel(level + 1)
+  const nextLevelXP = level < 100 ? xpForLevel(level + 1) : xpForLevel(100)
   const progress = nextLevelXP > currentLevelXP ? ((xp - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100 : 100
+  const nextLevelDollars = Math.round((nextLevelXP - xp) / 10)
 
   return (
     <div className="glass glass-highlight rounded-2xl p-5 md:p-6">
@@ -56,12 +63,12 @@ export function LevelProgress({ role }: { role: "model" | "recruiter" }) {
                 {tier.name}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">{tier.sub} · {xp.toLocaleString()} XP</p>
+            <p className="text-xs text-muted-foreground">{tier.sub} · ${totalEarnings.toLocaleString("en-US", { maximumFractionDigits: 0 })} заработано</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-xs text-muted-foreground">До Level {level + 1}</p>
-          <p className="text-sm font-semibold text-foreground">{(nextLevelXP - xp).toLocaleString()} XP</p>
+          <p className="text-xs text-muted-foreground">До Level {Math.min(level + 1, 100)}</p>
+          <p className="text-sm font-semibold text-foreground">${nextLevelDollars.toLocaleString()}</p>
         </div>
       </div>
       <div className="h-2.5 overflow-hidden rounded-full bg-white/5">

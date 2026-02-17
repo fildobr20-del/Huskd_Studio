@@ -8,7 +8,9 @@ import { createClient } from "@/lib/supabase/client"
 export default function SettingsPage() {
   const [sbp, setSbp] = useState("")
   const [card, setCard] = useState("")
-  const [crypto, setCrypto] = useState("")
+  const [cryptoBep20, setCryptoBep20] = useState("")
+  const [cryptoEth, setCryptoEth] = useState("")
+  const [cryptoSol, setCryptoSol] = useState("")
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [role, setRole] = useState("")
@@ -22,7 +24,15 @@ export default function SettingsPage() {
             setRole(data.role || "")
             setSbp(data.sbp_number || "")
             setCard(data.card_number || "")
-            setCrypto(data.crypto_wallet || "")
+            // Parse crypto_wallet JSON or legacy string
+            try {
+              const cw = JSON.parse(data.crypto_wallet || "{}")
+              setCryptoBep20(cw.bep20 || "")
+              setCryptoEth(cw.eth || "")
+              setCryptoSol(cw.sol || "")
+            } catch {
+              setCryptoBep20(data.crypto_wallet || "")
+            }
           }
         })
       }
@@ -34,8 +44,13 @@ export default function SettingsPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
+      const cryptoWallet = JSON.stringify({
+        bep20: cryptoBep20,
+        eth: cryptoEth,
+        sol: cryptoSol,
+      })
       await supabase.from("profiles").update({
-        sbp_number: sbp, card_number: card, crypto_wallet: crypto,
+        sbp_number: sbp, card_number: card, crypto_wallet: cryptoWallet,
       }).eq("id", user.id)
     }
     setLoading(false)
@@ -70,12 +85,25 @@ export default function SettingsPage() {
               </label>
               <input type="text" value={card} onChange={(e) => setCard(e.target.value)} placeholder="0000 0000 0000 0000" className="w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30" />
             </div>
-            <div>
-              <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Wallet className="h-4 w-4" /> Криптокошелёк (USDT TRC-20)
-              </label>
-              <input type="text" value={crypto} onChange={(e) => setCrypto(e.target.value)} placeholder="T..." className="w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+
+            <div className="border-t border-border/50 pt-4">
+              <p className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground"><Wallet className="h-4 w-4" /> Криптокошельки (USDT)</p>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground/70">BEP-20 (BSC)</label>
+                  <input type="text" value={cryptoBep20} onChange={(e) => setCryptoBep20(e.target.value)} placeholder="0x..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground/70">ERC-20 (Ethereum)</label>
+                  <input type="text" value={cryptoEth} onChange={(e) => setCryptoEth(e.target.value)} placeholder="0x..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground/70">SOL (Solana)</label>
+                  <input type="text" value={cryptoSol} onChange={(e) => setCryptoSol(e.target.value)} placeholder="So..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                </div>
+              </div>
             </div>
+
             <button onClick={handleSave} disabled={loading} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-gold-gradient py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-50">
               {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Сохранение...</> : saved ? "✓ Сохранено" : <><Save className="h-4 w-4" /> Сохранить</>}
             </button>
