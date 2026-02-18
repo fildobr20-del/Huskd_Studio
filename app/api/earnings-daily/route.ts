@@ -28,11 +28,19 @@ export async function GET(request: Request) {
     let earnings: any[] = []
 
     if (profile?.role === "recruiter") {
+      // Get recruiter's commission rate
+      const { data: recProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("commission_rate")
+        .eq("id", ghostId || user.id)
+        .single()
+      const commRate = (recProfile?.commission_rate || 10) / 100
+
       // Get all recruited models' earnings
       const { data: models } = await supabaseAdmin
         .from("profiles")
         .select("id")
-        .eq("recruited_by", user.id)
+        .eq("recruited_by", ghostId || user.id)
 
       if (models && models.length > 0) {
         const modelIds = models.map(m => m.id)
@@ -44,15 +52,15 @@ export async function GET(request: Request) {
           .lte("date", `${year}-12-31`)
           .order("date")
 
-        // Aggregate by date, apply 10% commission
+        // Aggregate by date, apply recruiter's commission rate
         const byDate: Record<string, number> = {}
         data?.forEach(e => {
-          byDate[e.date] = (byDate[e.date] || 0) + (e.amount * 0.1)
+          byDate[e.date] = (byDate[e.date] || 0) + (e.amount * commRate)
         })
         earnings = Object.entries(byDate).map(([date, amount]) => ({ date, amount: Math.round(amount * 100) / 100 }))
       }
     } else {
-      // Model — get own earnings
+      // Model — get own earnings (apply 70% share)
       const { data } = await supabaseAdmin
         .from("earnings_daily")
         .select("date, amount")
@@ -61,7 +69,7 @@ export async function GET(request: Request) {
         .lte("date", `${year}-12-31`)
         .order("date")
 
-      earnings = data || []
+      earnings = (data || []).map(e => ({ ...e, amount: Math.round(e.amount * 0.7 * 100) / 100 }))
     }
 
     return NextResponse.json({ earnings })

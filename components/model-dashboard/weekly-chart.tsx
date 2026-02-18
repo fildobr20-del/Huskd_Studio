@@ -30,7 +30,7 @@ export function WeeklyChart({ ghostQuery = "" }: { ghostQuery?: string }) {
       .then(d => {
         const map: Record<string, number> = {};
         d.earnings?.forEach((e: any) => { map[e.date] = (map[e.date] || 0) + e.amount });
-        setEarnings(dates.map(date => map[date] || 0));
+        setEarnings(dates.map(date => Math.round((map[date] || 0) * 100) / 100));
         setLoading(false);
       })
       .catch(() => setLoading(false));
