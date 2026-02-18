@@ -33,7 +33,7 @@ export function FinanceCards({ ghostQuery = "" }: { ghostQuery?: string }) {
     },
     {
       label: "ЗА ВСЁ ВРЕМЯ",
-      value: loading ? "..." : `$${(lifetime * 0.7).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      value: loading ? "..." : `$${lifetime.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
       change: "Накопительный итог",
       icon: TrendingUp,
       isPrimary: false,

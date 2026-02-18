@@ -107,13 +107,13 @@ export async function GET(request: Request) {
     if (profile.is_demo) {
       return NextResponse.json({
         totalGross: 6120.50, modelShare: 4284.35, recruiterShare: 612.05,
-        lifetime: 87412,
+        lifetime: 61188.40,
         platformBreakdown: [
-          { name: "Chaturbate", amount: 2450.00, tokens: 49000 },
-          { name: "StripChat", amount: 1890.50, tokens: 37810 },
-          { name: "BongaCams", amount: 1120.00, tokens: 53333 },
-          { name: "SkyPrivate", amount: 420.00, tokens: 0 },
-          { name: "Flirt4Free", amount: 240.00, tokens: 0 },
+          { name: "Chaturbate", amount: 1715.00, tokens: 49000 },
+          { name: "StripChat", amount: 1323.35, tokens: 37810 },
+          { name: "BongaCams", amount: 784.00, tokens: 53333 },
+          { name: "SkyPrivate", amount: 294.00, tokens: 0 },
+          { name: "Flirt4Free", amount: 168.00, tokens: 0 },
         ],
       })
     }
@@ -199,15 +199,16 @@ export async function GET(request: Request) {
     const totalGross = adjustedResults.reduce((sum, r) => sum + r.amount, 0)
     const modelShare = Math.round(totalGross * 0.7 * 100) / 100
     const recruiterShare = Math.round(totalGross * 0.1 * 100) / 100
+    const lifetimeModelShare = Math.round(lifetime * 0.7 * 100) / 100
 
     return NextResponse.json({
       totalGross: Math.round(totalGross * 100) / 100,
       modelShare,
       recruiterShare,
-      lifetime: Math.round(lifetime * 100) / 100,
+      lifetime: lifetimeModelShare,
       platformBreakdown: adjustedResults.map(r => ({
         name: r.platform,
-        amount: Math.round(r.amount * 100) / 100,
+        amount: Math.round(r.amount * 0.7 * 100) / 100,
         tokens: r.tokens,
       })),
     })
