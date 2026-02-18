@@ -13,6 +13,26 @@ export async function GET(request: Request) {
   
   const url = new URL(request.url)
   const userId = url.searchParams.get("userId")
+  const all = url.searchParams.get("all")
+
+  if (all === "true") {
+    // Get all payouts with user info
+    const { data } = await supabase
+      .from("payouts")
+      .select("id, user_id, amount, platform, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(200)
+    
+    // Get user emails
+    const { data: profiles } = await supabase.from("profiles").select("id, email, platform_nick")
+    const emailMap: Record<string, string> = {}
+    profiles?.forEach(p => { emailMap[p.id] = p.platform_nick || p.email })
+
+    return NextResponse.json({ 
+      payouts: (data || []).map(p => ({ ...p, userLabel: emailMap[p.user_id] || "Unknown" }))
+    })
+  }
+
   if (!userId) return NextResponse.json({ payouts: [] })
 
   const { data } = await supabase

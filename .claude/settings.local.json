@@ -5,7 +5,29 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(fly deploy:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\Рабочий стол\\\\husk label v2 code\" status)",
+      "Bash(xcopy:*)",
+      "Bash(cmd /c \"for %I in \\(\"C:UsersUserOneDriveРабочий столhusk label v2 code\"\\) do @echo %~sI\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\User\\\\Downloads\\\\copy-v14.ps1\")",
+      "Bash(dir /x \"C:\\\\Users\\\\User\\\\OneDrive\")",
+      "Bash(findstr:*)",
+      "Bash(SRC=\"C:/Users/User/Downloads/huskd-label-v14-temp/huskd-label\")",
+      "Bash(DST=\"C:/Users/User/OneDrive/Рабочий стол/husk label v2 code\")",
+      "Bash(for f in Dockerfile middleware.ts next.config.js package.json postcss.config.js tailwind.config.ts tsconfig.json components.json .gitignore)",
+      "Bash(do cp \"$SRC/$f\" \"$DST/\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(git -C \"C:/Users/User/OneDrive/Рабочий стол/husk label v2 code\" status --short)",
+      "Bash(git -C \"C:/Users/User/OneDrive/Рабочий стол/husk label v2 code\" diff --cached --stat)",
+      "Bash(SRC=\"C:/Users/User/Downloads/huskd-label-v15-temp/huskd-label\")",
+      "Bash(for d in app components hooks lib public)",
+      "Bash(do cp -r \"$SRC/$d\" \"$DST/\")",
+      "Bash(for f in Dockerfile middleware.ts next.config.js package.json postcss.config.js tailwind.config.ts tsconfig.json components.json)",
+      "Bash(SRC=\"C:/Users/User/Downloads/huskd-label-v16-temp/huskd-label\")",
+      "Bash(SRC=\"C:/Users/User/Downloads/huskd-label-v17-temp/huskd-label\")",
+      "Bash(git check-ignore:*)",
+      "Bash(dir:*)"
     ]
   }
 }
