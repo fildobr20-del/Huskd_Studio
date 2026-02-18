@@ -96,14 +96,19 @@ export default function OnboardingPage() {
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: p.color }} />
                   {p.name}
                 </label>
-                <input
-                  type="text"
-                  value={nicks[p.id] || ""}
-                  onChange={(e) => setNicks({ ...nicks, [p.id]: e.target.value })}
-                  onBlur={(e) => checkNick(p.id, e.target.value)}
-                  placeholder={`Ваш ник на ${p.name}`}
-                  className={`w-full rounded-xl border bg-background/50 py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 ${errors[p.id] ? "border-red-500/50 focus:ring-red-500/30" : "border-border focus:border-primary/40 focus:ring-primary/30"}`}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={nicks[p.id] || ""}
+                    onChange={(e) => setNicks({ ...nicks, [p.id]: e.target.value })}
+                    onBlur={(e) => checkNick(p.id, e.target.value)}
+                    placeholder={`Ваш ник на ${p.name}`}
+                    className={`flex-1 rounded-xl border bg-background/50 py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 ${errors[p.id] ? "border-red-500/50 focus:ring-red-500/30" : "border-border focus:border-primary/40 focus:ring-primary/30"}`}
+                  />
+                  {nicks[p.id] && (
+                    <button type="button" onClick={() => { const n = { ...nicks }; delete n[p.id]; setNicks(n); setErrors(e => ({ ...e, [p.id]: "" })) }} className="rounded-xl border border-red-500/20 px-3 text-red-400/60 hover:text-red-400 hover:border-red-500/40 transition text-xs">✕</button>
+                  )}
+                </div>
                 {errors[p.id] && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-red-400">
                     <AlertCircle className="h-3 w-3" /> {errors[p.id]}

@@ -13,7 +13,7 @@ interface Entry { id: string; date: string; amount: number; platform: string }
 export default function AdminPage() {
   const [secret, setSecret] = useState("")
   const [authed, setAuthed] = useState(false)
-  const [tab, setTab] = useState<"earnings" | "ghost" | "network">("earnings")
+  const [tab, setTab] = useState<"earnings" | "payouts" | "ghost" | "network">("earnings")
   const [models, setModels] = useState<ModelData[]>([])
   const [selectedModel, setSelectedModel] = useState("")
   const [entries, setEntries] = useState<Entry[]>([])
@@ -65,6 +65,14 @@ export default function AdminPage() {
   const handleDelete = async (id: string) => {
     await fetch("/api/admin/earnings", { method: "DELETE", headers, body: JSON.stringify({ id }) })
     loadEntries()
+  }
+
+  const handleDeleteAccount = async (userId: string, email: string) => {
+    if (!confirm(`Удалить аккаунт ${email}? Это необратимо!`)) return
+    await fetch("/api/admin/models", { method: "DELETE", headers, body: JSON.stringify({ userId }) })
+    setModels(prev => prev.filter(m => m.id !== userId))
+    setMessage(`🗑 Аккаунт ${email} удалён`)
+    if (selectedModel === userId) setSelectedModel("")
   }
 
   const addRow = () => {
@@ -121,9 +129,9 @@ export default function AdminPage() {
             <h1 className="text-lg font-bold text-foreground">⚡ Admin Panel</h1>
           </div>
           <div className="flex gap-1">
-            {(["earnings", "ghost", "network"] as const).map(t => (
+            {(["earnings", "payouts", "ghost", "network"] as const).map(t => (
               <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === t ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                {t === "earnings" ? "📊 Данные" : t === "ghost" ? "👻 Ghost Mode" : "🕸 Сеть"}
+                {t === "earnings" ? "📊 Данные" : t === "payouts" ? "💸 Выплаты" : t === "ghost" ? "👻 Ghost" : "🕸 Сеть"}
               </button>
             ))}
           </div>
@@ -180,6 +188,7 @@ export default function AdminPage() {
                           <div className="flex items-center gap-2">
                             <span className={`rounded-full px-2 py-0.5 text-[10px] ${m.role === "model" ? "bg-violet-500/10 text-violet-400" : "bg-blue-500/10 text-blue-400"}`}>{m.role}</span>
                             <span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteAccount(m.id, m.email) }} className="text-red-400/30 hover:text-red-400 ml-1" title="Удалить аккаунт"><Trash2 className="h-3.5 w-3.5" /></button>
                           </div>
                         </div>
                         {nickList.length > 0 && (
@@ -265,6 +274,9 @@ export default function AdminPage() {
         )}
 
         {/* GHOST MODE TAB */}
+        {/* PAYOUTS TAB */}
+        {tab === "payouts" && <PayoutsTab models={models} headers={headers} setMessage={setMessage} />}
+
         {tab === "ghost" && (
           <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-6">
             <h2 className="mb-2 text-lg font-bold text-foreground">👻 Ghost Mode</h2>
@@ -306,6 +318,105 @@ export default function AdminPage() {
 }
 
 // Referral Network Visualization
+function PayoutsTab({ models, headers, setMessage }: { models: ModelData[]; headers: Record<string, string>; setMessage: (m: string) => void }) {
+  const [selectedModel, setSelectedModel] = useState("")
+  const [payouts, setPayouts] = useState<any[]>([])
+  const [payLoading, setPayLoading] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
+
+  const platforms = ["chaturbate", "stripchat", "bongacams", "skyprivate", "flirt4free", "xmodels"]
+  const platformLabels: Record<string, string> = { chaturbate: "Chaturbate", stripchat: "StripChat", bongacams: "BongaCams", skyprivate: "SkyPrivate", flirt4free: "Flirt4Free", xmodels: "XModels" }
+
+  useEffect(() => {
+    if (!selectedModel) return
+    fetch(`/api/admin/payouts?userId=${selectedModel}`, { headers })
+      .then(r => r.json()).then(d => setPayouts(d.payouts || []))
+  }, [selectedModel])
+
+  const handlePayout = async (platform: string) => {
+    setPayLoading(platform)
+    const res = await fetch("/api/admin/payouts", {
+      method: "POST", headers,
+      body: JSON.stringify({ userId: selectedModel, platform }),
+    })
+    const data = await res.json()
+    if (data.success) {
+      setMessage(`✅ Выплата ${platformLabels[platform]}: $${data.amount} записана`)
+      // Refresh payouts
+      fetch(`/api/admin/payouts?userId=${selectedModel}`, { headers })
+        .then(r => r.json()).then(d => setPayouts(d.payouts || []))
+    }
+    setPayLoading(null)
+  }
+
+  const handleDeletePayout = async (id: string) => {
+    await fetch("/api/admin/payouts", { method: "DELETE", headers, body: JSON.stringify({ id }) })
+    setPayouts(prev => prev.filter(p => p.id !== id))
+  }
+
+  const filtered = models.filter(m => m.role === "model" && (
+    m.email.toLowerCase().includes(search.toLowerCase()) ||
+    (m.platformNick || "").toLowerCase().includes(search.toLowerCase())
+  )).sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0))
+
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+        <h3 className="mb-3 text-sm font-semibold text-foreground">Выберите модель</h3>
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm text-foreground" />
+        </div>
+        <div className="max-h-64 overflow-y-auto flex flex-col gap-1">
+          {filtered.map(m => (
+            <button key={m.id} onClick={() => setSelectedModel(m.id)} className={`flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition w-full ${selectedModel === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}>
+              <span className="text-foreground">{m.email}</span>
+              <span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+        {!selectedModel ? (
+          <p className="text-sm text-muted-foreground py-12 text-center">Выберите модель слева</p>
+        ) : (
+          <>
+            <h3 className="mb-4 text-sm font-semibold text-foreground">💸 Отметить выплату</h3>
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              {platforms.map(p => (
+                <button key={p} onClick={() => handlePayout(p)} disabled={payLoading === p} className="rounded-xl bg-emerald-600/10 border border-emerald-600/20 px-3 py-3 text-sm font-medium text-emerald-400 hover:bg-emerald-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                  {payLoading === p ? <Loader2 className="h-4 w-4 animate-spin" /> : "💸"} {platformLabels[p]}
+                </button>
+              ))}
+            </div>
+
+            {payouts.length > 0 && (
+              <>
+                <h4 className="mb-2 text-xs font-semibold text-muted-foreground">История выплат</h4>
+                <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+                  {payouts.map(p => (
+                    <div key={p.id} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-3 py-2">
+                      <div>
+                        <span className="text-xs text-foreground">{new Date(p.created_at).toLocaleDateString("ru-RU")}</span>
+                        <span className="ml-2 text-[10px] text-muted-foreground uppercase">{p.platform}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-emerald-400">${p.amount}</span>
+                        <button onClick={() => handleDeletePayout(p.id)} className="text-red-400/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ReferralMap({ models }: { models: ModelData[] }) {
   const recruiters = models.filter(m => m.role === "recruiter")
   const allModels = models.filter(m => m.role === "model")

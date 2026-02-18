@@ -10,7 +10,7 @@ const vibes = [
   { emoji: "💀", label: "Ужас", color: "from-gray-500 to-gray-700" },
 ]
 
-export function VibeLog() {
+export function VibeLog({ role = "model" }: { role?: "model" | "recruiter" }) {
   const [selected, setSelected] = useState<string | null>(null)
   const [note, setNote] = useState("")
   const [saved, setSaved] = useState(false)
@@ -51,7 +51,7 @@ export function VibeLog() {
     <div className="glass glass-highlight rounded-2xl p-5 md:p-6">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Как прошла смена?</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">{role === "recruiter" ? "Как прошли поиски?" : "Как прошла смена?"}</h3>
           <p className="text-[11px] text-muted-foreground">{saved ? "✓ Сохранено на сегодня" : "Выбери настроение"}</p>
         </div>
         {history.length > 0 && (

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DollarSign, TrendingUp, Calendar, Link2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 export function FinanceCards({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [balance, setBalance] = useState(0);
@@ -16,35 +15,12 @@ export function FinanceCards({ ghostQuery = "" }: { ghostQuery?: string }) {
       .then((r) => r.json())
       .then((d) => {
         setBalance(d.modelShare ?? 0);
+        setLifetime(d.lifetime ?? 0);
         setHasNicks(!d.message);
         setLoading(false);
-
-        if (d.modelShare > 0) {
-          const supabase = createClient();
-          supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user) {
-              supabase.from("profiles").select("total_lifetime_earnings").eq("id", user.id).single().then(({ data: prof }) => {
-                const current = prof?.total_lifetime_earnings || 0;
-                if (d.modelShare > current) {
-                  supabase.from("profiles").update({ total_lifetime_earnings: d.modelShare }).eq("id", user.id);
-                }
-                setLifetime(Math.max(current, d.modelShare));
-              });
-            }
-          });
-        }
       })
       .catch(() => setLoading(false));
-
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase.from("profiles").select("total_lifetime_earnings").eq("id", user.id).single().then(({ data: prof }) => {
-          if (prof?.total_lifetime_earnings) setLifetime(prof.total_lifetime_earnings);
-        });
-      }
-    });
-  }, []);
+  }, [ghostQuery]);
 
   const cards = [
     {
@@ -57,7 +33,7 @@ export function FinanceCards({ ghostQuery = "" }: { ghostQuery?: string }) {
     },
     {
       label: "ЗА ВСЁ ВРЕМЯ",
-      value: loading ? "..." : `$${lifetime.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      value: loading ? "..." : `$${(lifetime * 0.7).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
       change: "Накопительный итог",
       icon: TrendingUp,
       isPrimary: false,

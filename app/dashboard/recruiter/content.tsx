@@ -44,7 +44,7 @@ function RecruiterInner() {
           <section><ModelsTable ghostQuery={gq} /></section>
           <section><AchievementsPreview role="recruiter" ghostQuery={gq} /></section>
         </div>
-        <section className="mb-8"><VibeLog /></section>
+        <section className="mb-8"><VibeLog role="recruiter" /></section>
         <section className="mb-8"><EarningsHeatmap ghostQuery={gq} /></section>
         <p className="text-center text-[11px] text-muted-foreground/50 mb-4">
           Chaturbate, StripChat, BongaCams — обновляются ежедневно. Flirt4Free, SkyPrivate, XModels — синхронизируются по вторникам.

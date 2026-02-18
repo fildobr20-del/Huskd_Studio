@@ -28,3 +28,24 @@ export async function GET(request: Request) {
     }) || []
   })
 }
+
+export async function DELETE(request: Request) {
+  if (request.headers.get("x-admin-secret") !== "huskd-admin-2026") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+  const { userId } = await request.json()
+  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 })
+
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  
+  // Delete earnings
+  await supabaseAdmin.from("earnings_daily").delete().eq("user_id", userId)
+  // Delete vibe logs
+  await supabaseAdmin.from("vibe_logs").delete().eq("user_id", userId)
+  // Delete profile
+  await supabaseAdmin.from("profiles").delete().eq("id", userId)
+  // Delete auth user
+  await supabaseAdmin.auth.admin.deleteUser(userId)
+
+  return NextResponse.json({ success: true })
+}
