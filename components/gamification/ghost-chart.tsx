@@ -21,11 +21,11 @@ function getDayLabels(): string[] {
   return labels
 }
 
-export function GhostChart() {
+export function GhostChart({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [myEarnings, setMyEarnings] = useState(0)
 
   useEffect(() => {
-    fetch("/api/balance")
+    fetch(`/api/balance${ghostQuery}`)
       .then((r) => r.json())
       .then((d) => setMyEarnings(d.modelShare || 0))
       .catch(() => {})

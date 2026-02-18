@@ -24,12 +24,12 @@ const defaultPlatforms: PlatformData[] = [
   { name: "Flirt4Free", amount: 0 },
 ];
 
-export function PlatformBreakdown() {
+export function PlatformBreakdown({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [platforms, setPlatforms] = useState<PlatformData[]>(defaultPlatforms);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/balance")
+    fetch(`/api/balance${ghostQuery}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.platformBreakdown && d.platformBreakdown.length > 0) {

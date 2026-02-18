@@ -19,13 +19,13 @@ function getLast7Days(): string[] {
   return dates;
 }
 
-export function WeeklyChart() {
+export function WeeklyChart({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [earnings, setEarnings] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const dates = getLast7Days();
-    fetch(`/api/earnings-daily?year=${new Date().getFullYear()}`)
+    fetch(`/api/earnings-daily?year=${new Date().getFullYear()}${ghostQuery ? "&" + ghostQuery.substring(1) : ""}`)
       .then(r => r.json())
       .then(d => {
         const map: Record<string, number> = {};

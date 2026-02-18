@@ -5,14 +5,14 @@ import Link from "next/link";
 import { DollarSign, TrendingUp, Calendar, Link2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-export function FinanceCards() {
+export function FinanceCards({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [balance, setBalance] = useState(0);
   const [lifetime, setLifetime] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hasNicks, setHasNicks] = useState(false);
 
   useEffect(() => {
-    fetch("/api/balance")
+    fetch(`/api/balance${ghostQuery}`)
       .then((r) => r.json())
       .then((d) => {
         setBalance(d.modelShare ?? 0);

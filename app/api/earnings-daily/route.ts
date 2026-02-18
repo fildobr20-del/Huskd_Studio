@@ -11,6 +11,7 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url)
     const year = url.searchParams.get("year") || new Date().getFullYear().toString()
+    const ghostId = url.searchParams.get("ghostId")
 
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", ghostId || user.id)
       .single()
 
     let earnings: any[] = []
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
       const { data } = await supabaseAdmin
         .from("earnings_daily")
         .select("date, amount")
-        .eq("user_id", user.id)
+        .eq("user_id", ghostId || user.id)
         .gte("date", `${year}-01-01`)
         .lte("date", `${year}-12-31`)
         .order("date")

@@ -20,14 +20,14 @@ function getColor(amount: number, avg: number): string {
   return "bg-amber-400/90"
 }
 
-export function EarningsHeatmap() {
+export function EarningsHeatmap({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [tooltip, setTooltip] = useState<{ text: string; top: number; left: number } | null>(null)
   const [dayData, setDayData] = useState<Record<string, number>>({})
   const containerRef = useRef<HTMLDivElement>(null)
   const year = new Date().getFullYear()
 
   useEffect(() => {
-    fetch(`/api/earnings-daily?year=${year}`)
+    fetch(`/api/earnings-daily?year=${year}${ghostQuery ? "&" + ghostQuery.substring(1) : ""}`)
       .then(r => r.json())
       .then(d => {
         const map: Record<string, number> = {}

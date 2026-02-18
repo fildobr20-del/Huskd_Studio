@@ -100,11 +100,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Ghost mode — admin views user's data via ?ghostId=
+    const url = new URL(request.url)
+    const ghostId = url.searchParams.get("ghostId")
+    const targetUserId = ghostId || user.id
+
     // Get user profile with platform nicks
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, platform_nick, platform_nicks, is_demo")
-      .eq("id", user.id)
+      .eq("id", targetUserId)
       .single()
 
     if (!profile) {

@@ -1,20 +1,30 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { ArrowLeft, Save, Loader2, Plus, Search, Trash2 } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Loader2, Eye, Search, Users, DollarSign, Network, ChevronDown, X } from "lucide-react"
+
+interface ModelData {
+  id: string; email: string; role: string; platformNick: string; displayName: string;
+  totalEarnings: number; recruitedBy: string | null; referralCode: string;
+}
+interface Entry { id: string; date: string; amount: number; platform: string }
 
 export default function AdminPage() {
   const [secret, setSecret] = useState("")
   const [authed, setAuthed] = useState(false)
-  const [models, setModels] = useState<any[]>([])
+  const [tab, setTab] = useState<"earnings" | "ghost" | "network">("earnings")
+  const [models, setModels] = useState<ModelData[]>([])
   const [selectedModel, setSelectedModel] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0])
-  const [amount, setAmount] = useState("")
-  const [platform, setPlatform] = useState("chaturbate")
-  const [loading, setLoading] = useState(false)
+  const [entries, setEntries] = useState<Entry[]>([])
   const [message, setMessage] = useState("")
-  const [entries, setEntries] = useState<any[]>([])
+  const [search, setSearch] = useState("")
+
+  // Bulk entry
+  const [bulkRows, setBulkRows] = useState([{ date: new Date().toISOString().split("T")[0], amount: "", platform: "chaturbate" }])
+  const [bulkLoading, setBulkLoading] = useState(false)
+
+  const headers = { "x-admin-secret": "huskd-admin-2026", "Content-Type": "application/json" }
 
   const handleAuth = () => {
     if (secret === "huskd-admin-2026") setAuthed(true)
@@ -23,49 +33,76 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!authed) return
-    fetch("/api/admin/models", { headers: { "x-admin-secret": "huskd-admin-2026" } })
-      .then(r => r.json())
-      .then(d => setModels(d.models || []))
-      .catch(() => {})
+    fetch("/api/admin/models", { headers }).then(r => r.json()).then(d => setModels(d.models || []))
   }, [authed])
 
   useEffect(() => {
     if (!selectedModel || !authed) return
-    fetch(`/api/admin/earnings?userId=${selectedModel}`, { headers: { "x-admin-secret": "huskd-admin-2026" } })
-      .then(r => r.json())
-      .then(d => setEntries(d.entries || []))
-      .catch(() => {})
-  }, [selectedModel, authed, message])
+    loadEntries()
+  }, [selectedModel, authed])
 
-  const handleAdd = async () => {
-    if (!selectedModel || !amount || !date) return
-    setLoading(true)
-    const res = await fetch("/api/admin/earnings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": "huskd-admin-2026" },
-      body: JSON.stringify({ userId: selectedModel, date, amount: parseFloat(amount), platform }),
-    })
-    const data = await res.json()
-    setMessage(data.success ? `✅ Добавлено $${amount} за ${date}` : `❌ ${data.error}`)
-    setAmount("")
-    setLoading(false)
+  const loadEntries = () => {
+    fetch(`/api/admin/earnings?userId=${selectedModel}`, { headers })
+      .then(r => r.json()).then(d => setEntries(d.entries || []))
+  }
+
+  const handleBulkAdd = async () => {
+    const valid = bulkRows.filter(r => r.amount && parseFloat(r.amount) > 0)
+    if (!selectedModel || valid.length === 0) return
+    setBulkLoading(true)
+    for (const row of valid) {
+      await fetch("/api/admin/earnings", {
+        method: "POST", headers,
+        body: JSON.stringify({ userId: selectedModel, date: row.date, amount: parseFloat(row.amount), platform: row.platform }),
+      })
+    }
+    setMessage(`✅ Добавлено ${valid.length} записей`)
+    setBulkRows([{ date: new Date().toISOString().split("T")[0], amount: "", platform: "chaturbate" }])
+    setBulkLoading(false)
+    loadEntries()
   }
 
   const handleDelete = async (id: string) => {
-    await fetch("/api/admin/earnings", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json", "x-admin-secret": "huskd-admin-2026" },
-      body: JSON.stringify({ id }),
-    })
-    setMessage("Удалено")
+    await fetch("/api/admin/earnings", { method: "DELETE", headers, body: JSON.stringify({ id }) })
+    loadEntries()
   }
+
+  const addRow = () => {
+    const lastRow = bulkRows[bulkRows.length - 1]
+    setBulkRows([...bulkRows, { date: lastRow.date, amount: "", platform: lastRow.platform }])
+  }
+
+  const updateRow = (i: number, field: string, value: string) => {
+    const rows = [...bulkRows]
+    ;(rows[i] as any)[field] = value
+    setBulkRows(rows)
+  }
+
+  const removeRow = (i: number) => {
+    if (bulkRows.length <= 1) return
+    setBulkRows(bulkRows.filter((_, idx) => idx !== i))
+  }
+
+  const filteredModels = models.filter(m =>
+    m.email.toLowerCase().includes(search.toLowerCase()) ||
+    (m.platformNick || "").toLowerCase().includes(search.toLowerCase())
+  )
+
+  const selectedModelData = models.find(m => m.id === selectedModel)
+
+  // Stats
+  const totalUsers = models.length
+  const totalModels = models.filter(m => m.role === "model").length
+  const totalRecruiters = models.filter(m => m.role === "recruiter").length
+  const totalEarnings = models.reduce((s, m) => s + (m.totalEarnings || 0), 0)
 
   if (!authed) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="flex min-h-screen items-center justify-center px-4 bg-background">
         <div className="w-full max-w-sm glass-gold rounded-2xl p-8">
-          <h1 className="mb-4 text-xl font-bold text-foreground">Admin Panel</h1>
-          <input type="password" value={secret} onChange={e => setSecret(e.target.value)} placeholder="Пароль" className="mb-3 w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm" onKeyDown={e => e.key === "Enter" && handleAuth()} />
+          <h1 className="mb-2 text-xl font-bold text-foreground">🔐 Admin Panel</h1>
+          <p className="mb-4 text-sm text-muted-foreground">Husk'd Label Management</p>
+          <input type="password" value={secret} onChange={e => setSecret(e.target.value)} placeholder="Пароль" className="mb-3 w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground" onKeyDown={e => e.key === "Enter" && handleAuth()} />
           <button onClick={handleAuth} className="w-full rounded-full bg-gold-gradient py-3 text-sm font-semibold text-background">Войти</button>
           {message && <p className="mt-2 text-sm text-destructive">{message}</p>}
         </div>
@@ -74,71 +111,252 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
-      <div className="mx-auto max-w-2xl">
-        <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> На главную
-        </Link>
-        <h1 className="mb-6 text-2xl font-bold text-foreground">📊 Admin — Ввод данных</h1>
-
-        {message && <div className="mb-4 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-sm text-primary">{message}</div>}
-
-        <div className="glass-gold rounded-2xl p-6 mb-6">
-          <h2 className="mb-4 text-lg font-semibold">Добавить доход</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs text-muted-foreground">Модель</label>
-              <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)} className="w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground">
-                <option value="">Выберите модель...</option>
-                {models.map(m => (
-                  <option key={m.id} value={m.id}>{m.email} — {m.platformNick || "no nick"}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Дата</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Сумма ($)</label>
-              <input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" className="w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Платформа</label>
-              <select value={platform} onChange={e => setPlatform(e.target.value)} className="w-full rounded-xl border border-border bg-background/50 py-3 px-4 text-sm text-foreground">
-                <option value="chaturbate">Chaturbate</option>
-                <option value="stripchat">StripChat</option>
-                <option value="bongacams">BongaCams</option>
-                <option value="skyprivate">SkyPrivate</option>
-                <option value="flirt4free">Flirt4Free</option>
-                <option value="xmodels">XModels</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button onClick={handleAdd} disabled={loading} className="w-full rounded-xl bg-gold-gradient py-3 text-sm font-semibold text-background flex items-center justify-center gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Добавить
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 py-3">
+        <div className="mx-auto max-w-6xl flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-muted-foreground hover:text-foreground"><ArrowLeft className="h-5 w-5" /></Link>
+            <h1 className="text-lg font-bold text-foreground">⚡ Admin Panel</h1>
+          </div>
+          <div className="flex gap-1">
+            {(["earnings", "ghost", "network"] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${tab === t ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                {t === "earnings" ? "📊 Данные" : t === "ghost" ? "👻 Ghost Mode" : "🕸 Сеть"}
               </button>
-            </div>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-6">
+        {message && (
+          <div className="mb-4 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-sm text-primary flex items-center justify-between">
+            {message}
+            <button onClick={() => setMessage("")}><X className="h-4 w-4" /></button>
+          </div>
+        )}
+
+        {/* Stats bar */}
+        <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
+          <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
+            <p className="text-[11px] text-muted-foreground">Users</p>
+            <p className="text-xl font-bold text-foreground">{totalUsers}</p>
+          </div>
+          <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
+            <p className="text-[11px] text-muted-foreground">Models</p>
+            <p className="text-xl font-bold text-violet-400">{totalModels}</p>
+          </div>
+          <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
+            <p className="text-[11px] text-muted-foreground">Recruiters</p>
+            <p className="text-xl font-bold text-blue-400">{totalRecruiters}</p>
+          </div>
+          <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4">
+            <p className="text-[11px] text-muted-foreground">Total Earnings</p>
+            <p className="text-xl font-bold text-emerald-400">${totalEarnings.toLocaleString()}</p>
           </div>
         </div>
 
-        {selectedModel && entries.length > 0 && (
-          <div className="glass-gold rounded-2xl p-6">
-            <h2 className="mb-4 text-lg font-semibold">Записи ({entries.length})</h2>
-            <div className="flex flex-col gap-2 max-h-80 overflow-y-auto">
-              {entries.map((e: any) => (
-                <div key={e.id} className="flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-2 border border-white/5">
-                  <div>
-                    <span className="text-sm font-medium text-foreground">{e.date}</span>
-                    <span className="ml-3 text-xs text-muted-foreground">{e.platform}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-emerald-400">${e.amount}</span>
-                    <button onClick={() => handleDelete(e.id)} className="text-red-400/50 hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
-                  </div>
+        {/* EARNINGS TAB */}
+        {tab === "earnings" && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Left: model selector + bulk entry */}
+            <div className="lg:col-span-2 flex flex-col gap-4">
+              {/* Model search */}
+              <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по email или нику..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm text-foreground" />
                 </div>
+                <div className="max-h-48 overflow-y-auto flex flex-col gap-1">
+                  {filteredModels.map(m => (
+                    <button key={m.id} onClick={() => setSelectedModel(m.id)} className={`flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${selectedModel === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}>
+                      <div>
+                        <span className="font-medium text-foreground">{m.platformNick || m.email.split("@")[0]}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{m.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] ${m.role === "model" ? "bg-violet-500/10 text-violet-400" : "bg-blue-500/10 text-blue-400"}`}>{m.role}</span>
+                        <span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bulk entry form */}
+              {selectedModel && (
+                <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Добавить доходы — {selectedModelData?.platformNick || selectedModelData?.email}
+                    </h3>
+                    <button onClick={addRow} className="rounded-lg bg-primary/10 px-3 py-1 text-xs text-primary hover:bg-primary/20 flex items-center gap-1">
+                      <Plus className="h-3 w-3" /> Строка
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {bulkRows.map((row, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input type="date" value={row.date} onChange={e => updateRow(i, "date", e.target.value)} className="flex-1 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
+                        <input type="number" step="0.01" value={row.amount} onChange={e => updateRow(i, "amount", e.target.value)} placeholder="$" className="w-24 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
+                        <select value={row.platform} onChange={e => updateRow(i, "platform", e.target.value)} className="rounded-lg border border-border bg-background/50 py-2 px-2 text-xs text-foreground">
+                          <option value="chaturbate">CB</option>
+                          <option value="stripchat">SC</option>
+                          <option value="bongacams">BC</option>
+                          <option value="skyprivate">SP</option>
+                          <option value="flirt4free">F4F</option>
+                          <option value="xmodels">XM</option>
+                        </select>
+                        {bulkRows.length > 1 && (
+                          <button onClick={() => removeRow(i)} className="text-red-400/50 hover:text-red-400"><X className="h-4 w-4" /></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={handleBulkAdd} disabled={bulkLoading} className="mt-3 w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-emerald-700">
+                    {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Сохранить все
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Right: existing entries */}
+            <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+              <h3 className="mb-3 text-sm font-semibold text-foreground">
+                Записи {selectedModel ? `(${entries.length})` : ""}
+              </h3>
+              {!selectedModel ? (
+                <p className="text-xs text-muted-foreground py-8 text-center">Выберите пользователя</p>
+              ) : entries.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-8 text-center">Нет записей</p>
+              ) : (
+                <div className="flex flex-col gap-1.5 max-h-[500px] overflow-y-auto">
+                  {entries.map(e => (
+                    <div key={e.id} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-foreground">{e.date}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase">{e.platform}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-emerald-400">${e.amount}</span>
+                        <button onClick={() => handleDelete(e.id)} className="text-red-400/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* GHOST MODE TAB */}
+        {tab === "ghost" && (
+          <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-6">
+            <h2 className="mb-2 text-lg font-bold text-foreground">👻 Ghost Mode</h2>
+            <p className="mb-4 text-sm text-muted-foreground">Посмотри кабинет глазами модели/рекрутера и внеси данные</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {models.map(m => (
+                <a key={m.id} href={`/dashboard/${m.role}?ghost=${m.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 p-4 transition hover:border-primary/20 hover:bg-primary/5">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${m.role === "model" ? "bg-violet-500/10 text-violet-400" : "bg-blue-500/10 text-blue-400"}`}>
+                    <Eye className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{m.platformNick || m.email.split("@")[0]}</p>
+                    <p className="text-[11px] text-muted-foreground">{m.role} · ${(m.totalEarnings || 0).toLocaleString()}</p>
+                  </div>
+                </a>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* NETWORK TAB */}
+        {tab === "network" && <ReferralMap models={models} />}
+      </main>
+    </div>
+  )
+}
+
+// Referral Network Visualization
+function ReferralMap({ models }: { models: ModelData[] }) {
+  const recruiters = models.filter(m => m.role === "recruiter")
+  const allModels = models.filter(m => m.role === "model")
+
+  return (
+    <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-6">
+      <h2 className="mb-2 text-lg font-bold text-foreground">🕸 Referral Network</h2>
+      <p className="mb-6 text-sm text-muted-foreground">Карта связей — кто кого привёл</p>
+
+      {/* Studio hub */}
+      <div className="flex flex-col items-center gap-8">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/20">
+          <span className="text-xl font-bold text-background">H</span>
+        </div>
+        <p className="text-xs text-muted-foreground -mt-6">Husk'd Label</p>
+
+        {recruiters.length === 0 && allModels.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8">Нет привязанных пользователей</p>
+        ) : (
+          <div className="w-full grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Recruiters with their models */}
+            {recruiters.map(r => {
+              const rModels = allModels.filter(m => m.recruitedBy === r.id)
+              const rEarnings = rModels.reduce((s, m) => s + (m.totalEarnings || 0), 0)
+              return (
+                <div key={r.id} className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400">
+                      <Users className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{r.platformNick || r.email.split("@")[0]}</p>
+                      <p className="text-[10px] text-muted-foreground">{rModels.length} моделей · ${rEarnings.toLocaleString()} оборот</p>
+                    </div>
+                  </div>
+                  {rModels.length > 0 ? (
+                    <div className="flex flex-col gap-1.5">
+                      {rModels.sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0)).map(m => (
+                        <div key={m.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-1.5">
+                          <span className="text-xs text-foreground">{m.platformNick || m.email.split("@")[0]}</span>
+                          <span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground/50">Нет моделей</p>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Unlinked models */}
+            {(() => {
+              const unlinked = allModels.filter(m => !m.recruitedBy)
+              if (unlinked.length === 0) return null
+              return (
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground">
+                      <Users className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Без рекрутера</p>
+                      <p className="text-[10px] text-muted-foreground">{unlinked.length} моделей</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {unlinked.map(m => (
+                      <div key={m.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-1.5">
+                        <span className="text-xs text-foreground">{m.platformNick || m.email.split("@")[0]}</span>
+                        <span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>

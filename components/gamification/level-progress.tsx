@@ -24,17 +24,17 @@ function getTier(level: number) {
   return { name: "Black Diamond", sub: "Легенда", gradient: "from-gray-900 via-purple-900 to-black", text: "text-purple-300" }
 }
 
-export function LevelProgress({ role }: { role: "model" | "recruiter" }) {
+export function LevelProgress({ role, ghostQuery = "" }: { role: "model" | "recruiter"; ghostQuery?: string }) {
   const [totalEarnings, setTotalEarnings] = useState(0)
 
   useEffect(() => {
     if (role === "recruiter") {
-      fetch("/api/recruiter-models")
+      fetch(`/api/recruiter-models${ghostQuery}`)
         .then((r) => r.json())
         .then((d) => setTotalEarnings(d.recruiterCommission || 0))
         .catch(() => {})
     } else {
-      fetch("/api/balance")
+      fetch(`/api/balance${ghostQuery}`)
         .then((r) => r.json())
         .then((d) => setTotalEarnings(d.modelShare || 0))
         .catch(() => {})

@@ -16,11 +16,11 @@ const recruiterAchievements = [
   { id: "empire", name: "Empire", desc: "Модели заработали $50,000", icon: Crown, threshold: 50000 },
 ]
 
-export function AchievementsPreview({ role }: { role: "model" | "recruiter" }) {
+export function AchievementsPreview({ role, ghostQuery = "" }: { role: "model" | "recruiter"; ghostQuery?: string }) {
   const [earnings, setEarnings] = useState(0)
 
   useEffect(() => {
-    fetch("/api/balance")
+    fetch(`/api/balance${ghostQuery}`)
       .then((r) => r.json())
       .then((d) => setEarnings(role === "model" ? (d.modelShare || 0) : (d.recruiterShare || 0)))
       .catch(() => {})
