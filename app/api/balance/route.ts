@@ -52,10 +52,15 @@ async function fetchStripchat(modelUsername: string): Promise<PlatformEarnings> 
     if (!res.ok) return { platform: "StripChat", tokens: 0, amount: 0, currency: "usd" }
     const data = await res.json()
 
-    // Stripchat returns earnings data - extract total
-    const totalAmount = data.totalEarnings || data.total || data.amount || 0
+    // Stripchat may return tokens or USD — detect and convert
+    // Check multiple possible response formats
+    const rawTokens = data.totalTokens || data.tokens || data.totalEarnings || data.total || data.amount || 0
+    const rawUsd = data.totalUsd || data.usd || data.earnings_usd || 0
+    
+    // If we got USD directly, use it; otherwise convert tokens to USD (rate: $0.05/token)
+    const amountUsd = rawUsd > 0 ? Number(rawUsd) : Number(rawTokens) * 0.05
 
-    return { platform: "StripChat", tokens: 0, amount: Number(totalAmount), currency: "usd" }
+    return { platform: "StripChat", tokens: Number(rawTokens), amount: amountUsd, currency: "usd" }
   } catch {
     return { platform: "StripChat", tokens: 0, amount: 0, currency: "usd" }
   }
@@ -171,6 +176,30 @@ export async function GET(request: Request) {
     const totalGross = results.reduce((sum, r) => sum + r.amount, 0)
     const modelShare = Math.round(totalGross * 0.7 * 100) / 100 // 70% to model
     const recruiterShare = Math.round(totalGross * 0.1 * 100) / 100 // 10% to recruiter
+
+    // Auto-save today's earnings to earnings_daily for charts/heatmap
+    if (totalGross > 0 && !ghostId) {
+      const today = new Date().toISOString().split("T")[0]
+      const supabaseAdmin = (await import("@supabase/supabase-js")).createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      for (const r of results) {
+        if (r.amount > 0) {
+          await supabaseAdmin.from("earnings_daily").upsert(
+            { user_id: targetUserId, date: today, amount: r.amount, platform: r.platform },
+            { onConflict: "user_id,date,platform" }
+          ).then(() => {})
+        }
+      }
+      // Also update lifetime
+      const { data: allEarnings } = await supabaseAdmin
+        .from("earnings_daily")
+        .select("amount")
+        .eq("user_id", targetUserId)
+      const lifetime = allEarnings?.reduce((s, e) => s + e.amount, 0) || 0
+      await supabaseAdmin.from("profiles").update({ total_lifetime_earnings: lifetime }).eq("id", targetUserId)
+    }
 
     return NextResponse.json({
       totalGross: Math.round(totalGross * 100) / 100,

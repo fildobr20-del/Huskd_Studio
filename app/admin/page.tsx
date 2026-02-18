@@ -168,19 +168,31 @@ export default function AdminPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск по email или нику..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm text-foreground" />
                 </div>
-                <div className="max-h-48 overflow-y-auto flex flex-col gap-1">
-                  {filteredModels.map(m => (
-                    <button key={m.id} onClick={() => setSelectedModel(m.id)} className={`flex items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition ${selectedModel === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}>
-                      <div>
-                        <span className="font-medium text-foreground">{m.platformNick || m.email.split("@")[0]}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">{m.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] ${m.role === "model" ? "bg-violet-500/10 text-violet-400" : "bg-blue-500/10 text-blue-400"}`}>{m.role}</span>
-                        <span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span>
-                      </div>
-                    </button>
-                  ))}
+                <div className="max-h-64 overflow-y-auto flex flex-col gap-1">
+                  {filteredModels.map(m => {
+                    const nicks = (m as any).platformNicks || {}
+                    const nickList = Object.entries(nicks).filter(([_, v]) => v)
+                    return (
+                      <button key={m.id} onClick={() => setSelectedModel(m.id)} className={`flex flex-col rounded-xl px-3 py-2.5 text-left text-sm transition ${selectedModel === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}>
+                        <div className="flex items-center justify-between w-full">
+                          <span className="font-medium text-foreground">{m.email}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] ${m.role === "model" ? "bg-violet-500/10 text-violet-400" : "bg-blue-500/10 text-blue-400"}`}>{m.role}</span>
+                            <span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        {nickList.length > 0 && (
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            {nickList.map(([platform, nick]) => (
+                              <span key={platform} className="text-[10px] text-muted-foreground bg-white/[0.03] rounded px-1.5 py-0.5">
+                                {platform}: <span className="text-foreground">{nick as string}</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 

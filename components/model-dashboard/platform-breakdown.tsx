@@ -66,7 +66,12 @@ export function PlatformBreakdown({ ghostQuery = "" }: { ghostQuery?: string }) 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-foreground">{p.name}</span>
                   <span className="text-sm font-bold text-foreground">
-                    {loading ? "..." : `$${p.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
+                    {loading ? "..." : (
+                      <span>
+                        ${p.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        {p.tokens ? <span className="ml-1 text-[10px] text-muted-foreground">({p.tokens.toLocaleString()} tk)</span> : null}
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className="mt-1 h-1 overflow-hidden rounded-full bg-white/5">
