@@ -4,18 +4,20 @@ import { useEffect, useState } from "react"
 import { DollarSign, Users, TrendingUp, Percent } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
-export function StatsCards() {
+export function StatsCards({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [commission, setCommission] = useState(0)
   const [lifetime, setLifetime] = useState(0)
   const [modelCount, setModelCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [commRate, setCommRate] = useState(10)
 
   useEffect(() => {
     // Fetch recruiter models data
-    fetch("/api/recruiter-models")
+    fetch(`/api/recruiter-models${ghostQuery}`)
       .then((r) => r.json())
       .then((d) => {
         setCommission(d.recruiterCommission || 0)
+        setCommRate(d.commissionPercent || 10)
         setModelCount(d.totalModels || 0)
         setLoading(false)
 
@@ -58,7 +60,7 @@ export function StatsCards() {
     },
     {
       title: "Commission Rate",
-      value: "10%",
+      value: `${commRate}%`,
       icon: Percent, accent: "purple" as const,
       description: "Ваша ставка",
     },

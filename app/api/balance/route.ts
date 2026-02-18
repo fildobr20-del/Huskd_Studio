@@ -24,8 +24,10 @@ async function fetchChaturbate(username: string): Promise<PlatformEarnings> {
     // Filter rows by model username if needed (this is studio-level data)
     const totalTokens = cashout.totals?.Tokens || 0
     const totalPayout = cashout.totals?.Payout || 0
+    // Chaturbate: 1 token = $0.05 for model. Use Payout if available, otherwise convert
+    const amountUsd = totalPayout > 0 ? Number(totalPayout) : Number(totalTokens) * 0.05
 
-    return { platform: "Chaturbate", tokens: totalTokens, amount: totalPayout, currency: "usd" }
+    return { platform: "Chaturbate", tokens: totalTokens, amount: amountUsd, currency: "usd" }
   } catch {
     return { platform: "Chaturbate", tokens: 0, amount: 0, currency: "usd" }
   }
@@ -85,11 +87,16 @@ async function fetchBongaCams(modelUsername: string): Promise<PlatformEarnings> 
     if (!res.ok) return { platform: "BongaCams", tokens: 0, amount: 0, currency: "usd" }
     const data = await res.json()
 
+    const rawTokens = data.with_percentage_rate_tokens || data.tokens || 0
+    const rawIncome = data.with_percentage_rate_income || data.income || data.amount || 0
+    // BongaCams: 1000 tokens = $21, so 1 token = $0.021
+    const amountUsd = rawIncome > 0 ? Number(rawIncome) : Number(rawTokens) * 0.021
+
     return {
       platform: "BongaCams",
-      tokens: data.with_percentage_rate_tokens || 0,
-      amount: data.with_percentage_rate_income || 0,
-      currency: data.currency || "usd",
+      tokens: Number(rawTokens),
+      amount: amountUsd,
+      currency: "usd",
     }
   } catch {
     return { platform: "BongaCams", tokens: 0, amount: 0, currency: "usd" }

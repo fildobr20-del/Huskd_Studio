@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { createClient } from "@supabase/supabase-js"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -14,20 +14,33 @@ export async function GET() {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
+    // Ghost mode support
+    const url = new URL(request.url)
+    const ghostId = url.searchParams.get("ghostId")
+    const targetId = ghostId || user.id
+
     // Find all models recruited by this user
     const { data: models, error } = await supabaseAdmin
       .from("profiles")
       .select("id, email, display_name, platform_nick, platform_nicks, total_lifetime_earnings, created_at, role")
-      .eq("recruited_by", user.id)
+      .eq("recruited_by", targetId)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
+    // Get recruiter's commission rate (default 10%)
+    const { data: recruiterProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("commission_rate")
+      .eq("id", targetId)
+      .single()
+    const commissionRate = (recruiterProfile?.commission_rate || 10) / 100
+
     // Calculate totals
     const activeModels = models?.filter(m => m.platform_nick || m.platform_nicks) || []
     const totalModelEarnings = models?.reduce((sum, m) => sum + (m.total_lifetime_earnings || 0), 0) || 0
-    const recruiterCommission = Math.round(totalModelEarnings * 0.1 * 100) / 100 // 10%
+    const recruiterCommission = Math.round(totalModelEarnings * commissionRate * 100) / 100
 
     return NextResponse.json({
       models: models?.map(m => ({
@@ -43,6 +56,7 @@ export async function GET() {
       activeModels: activeModels.length,
       totalModelEarnings,
       recruiterCommission,
+      commissionPercent: Math.round(commissionRate * 100),
     })
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 })

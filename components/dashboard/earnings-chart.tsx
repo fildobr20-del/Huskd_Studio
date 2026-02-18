@@ -7,12 +7,12 @@ import {
 
 const monthNames = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
 
-export function EarningsChart() {
+export function EarningsChart({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [data, setData] = useState<{ month: string; earnings: number }[]>([])
 
   useEffect(() => {
     const year = new Date().getFullYear()
-    fetch(`/api/earnings-daily?year=${year}`)
+    fetch(`/api/earnings-daily?year=${year}${ghostQuery ? "&" + ghostQuery.substring(1) : ""}`)
       .then(r => r.json())
       .then(d => {
         // Aggregate by month

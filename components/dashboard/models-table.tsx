@@ -12,12 +12,12 @@ interface ModelData {
   hasNicks: boolean
 }
 
-export function ModelsTable() {
+export function ModelsTable({ ghostQuery = "" }: { ghostQuery?: string }) {
   const [models, setModels] = useState<ModelData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/recruiter-models")
+    fetch(`/api/recruiter-models${ghostQuery}`)
       .then((r) => r.json())
       .then((d) => { setModels(d.models || []); setLoading(false) })
       .catch(() => setLoading(false))

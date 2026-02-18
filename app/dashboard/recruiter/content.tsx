@@ -1,5 +1,7 @@
 "use client"
 
+import { Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { EarningsChart } from "@/components/dashboard/earnings-chart"
@@ -10,31 +12,40 @@ import { AchievementsPreview } from "@/components/gamification/achievements-prev
 import { EarningsHeatmap } from "@/components/gamification/earnings-heatmap"
 import { VibeLog } from "@/components/gamification/vibe-log"
 
-export function RecruiterContent() {
+function RecruiterInner() {
+  const searchParams = useSearchParams()
+  const ghostId = searchParams.get("ghost")
+  const gq = ghostId ? `?ghostId=${ghostId}` : ""
+
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="ambient-orb -left-32 top-16 h-[600px] w-[600px] bg-violet-600/[0.08]" style={{ animation: "orb-float 14s ease-in-out infinite" }} />
         <div className="ambient-orb -right-24 top-1/4 h-[500px] w-[500px] bg-blue-600/[0.07]" style={{ animation: "orb-float-slow 18s ease-in-out infinite" }} />
       </div>
+      {ghostId && (
+        <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 text-center text-xs text-red-400 font-medium">
+          👻 Ghost Mode — вы просматриваете кабинет рекрутера
+        </div>
+      )}
       <DashboardHeader />
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
         <div className="mb-8 lg:mb-10">
           <h1 className="text-balance text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{"Обзор вашей рекрутерской активности"}</p>
+          <p className="mt-1 text-sm text-muted-foreground">Обзор вашей рекрутерской активности</p>
         </div>
-        <section className="mb-8 lg:mb-10"><StatsCards /></section>
-        <section className="mb-8"><LevelProgress role="recruiter" /></section>
+        <section className="mb-8 lg:mb-10"><StatsCards ghostQuery={gq} /></section>
+        <section className="mb-8"><LevelProgress role="recruiter" ghostQuery={gq} /></section>
         <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-5">
-          <section className="lg:col-span-3"><EarningsChart /></section>
+          <section className="lg:col-span-3"><EarningsChart ghostQuery={gq} /></section>
           <section className="lg:col-span-2"><ReferralTools /></section>
         </div>
         <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <section><ModelsTable /></section>
-          <section><AchievementsPreview role="recruiter" /></section>
+          <section><ModelsTable ghostQuery={gq} /></section>
+          <section><AchievementsPreview role="recruiter" ghostQuery={gq} /></section>
         </div>
         <section className="mb-8"><VibeLog /></section>
-        <section className="mb-8"><EarningsHeatmap /></section>
+        <section className="mb-8"><EarningsHeatmap ghostQuery={gq} /></section>
         <p className="text-center text-[11px] text-muted-foreground/50 mb-4">
           Chaturbate, StripChat, BongaCams — обновляются ежедневно. Flirt4Free, SkyPrivate, XModels — синхронизируются по вторникам.
         </p>
@@ -48,4 +59,8 @@ export function RecruiterContent() {
       </footer>
     </div>
   )
+}
+
+export function RecruiterContent() {
+  return <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Загрузка...</p></div>}><RecruiterInner /></Suspense>
 }

@@ -86,15 +86,16 @@ export default function AdminPage() {
   const filteredModels = models.filter(m =>
     m.email.toLowerCase().includes(search.toLowerCase()) ||
     (m.platformNick || "").toLowerCase().includes(search.toLowerCase())
-  )
+  ).sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0))
 
   const selectedModelData = models.find(m => m.id === selectedModel)
 
   // Stats
-  const totalUsers = models.length
-  const totalModels = models.filter(m => m.role === "model").length
-  const totalRecruiters = models.filter(m => m.role === "recruiter").length
-  const totalEarnings = models.reduce((s, m) => s + (m.totalEarnings || 0), 0)
+  const realModels = models.filter(m => !m.email.includes("demo") && m.email !== "a@gmail.com")
+  const totalUsers = realModels.length
+  const totalModels = realModels.filter(m => m.role === "model").length
+  const totalRecruiters = realModels.filter(m => m.role === "recruiter").length
+  const totalEarnings = realModels.reduce((s, m) => s + (m.totalEarnings || 0), 0)
 
   if (!authed) {
     return (
@@ -267,19 +268,32 @@ export default function AdminPage() {
         {tab === "ghost" && (
           <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-6">
             <h2 className="mb-2 text-lg font-bold text-foreground">👻 Ghost Mode</h2>
-            <p className="mb-4 text-sm text-muted-foreground">Посмотри кабинет глазами модели/рекрутера и внеси данные</p>
+            <p className="mb-4 text-sm text-muted-foreground">Посмотри кабинет глазами модели/рекрутера</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {models.map(m => (
-                <a key={m.id} href={`/dashboard/${m.role}?ghost=${m.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl bg-white/[0.02] border border-white/5 p-4 transition hover:border-primary/20 hover:bg-primary/5">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${m.role === "model" ? "bg-violet-500/10 text-violet-400" : "bg-blue-500/10 text-blue-400"}`}>
-                    <Eye className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{m.platformNick || m.email.split("@")[0]}</p>
-                    <p className="text-[11px] text-muted-foreground">{m.role} · ${(m.totalEarnings || 0).toLocaleString()}</p>
-                  </div>
-                </a>
-              ))}
+              {[...models].sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0)).map(m => {
+                const nicks = (m as any).platformNicks || {}
+                const nickList = Object.entries(nicks).filter(([_, v]) => v)
+                return (
+                  <a key={m.id} href={`/dashboard/${m.role}?ghost=${m.id}`} target="_blank" rel="noopener noreferrer" className="flex flex-col rounded-xl bg-white/[0.02] border border-white/5 p-4 transition hover:border-primary/20 hover:bg-primary/5">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${m.role === "model" ? "bg-violet-500/10 text-violet-400" : "bg-blue-500/10 text-blue-400"}`}>
+                        <Eye className="h-5 w-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{m.email}</p>
+                        <p className="text-[11px] text-muted-foreground">{m.role} · ${(m.totalEarnings || 0).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {nickList.length > 0 && (
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {nickList.map(([p, n]) => (
+                          <span key={p} className="text-[9px] text-muted-foreground bg-white/[0.03] rounded px-1.5 py-0.5">{p}: {n as string}</span>
+                        ))}
+                      </div>
+                    )}
+                  </a>
+                )
+              })}
             </div>
           </div>
         )}
