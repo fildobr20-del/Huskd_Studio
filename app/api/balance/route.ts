@@ -78,6 +78,9 @@ async function fetchBongaCams(modelUsername: string): Promise<PlatformEarnings> 
   } catch { return { platform: "bongacams", tokens: 0, amount: 0, currency: "usd" } }
 }
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
