@@ -11,6 +11,7 @@ const platforms = [
   { id: "bongacams", name: "BongaCams", color: "#9b59b6" },
   { id: "skyprivate", name: "SkyPrivate", color: "#3498db" },
   { id: "flirt4free", name: "Flirt4Free", color: "#e91e8c" },
+  { id: "xmodels", name: "XModels", color: "#00bcd4" },
 ]
 
 export default function OnboardingPage() {

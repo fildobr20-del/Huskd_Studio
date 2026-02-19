@@ -24,7 +24,7 @@ async function fetchChaturbate(username: string): Promise<PlatformEarnings> {
   try {
     const res = await fetch(
       `https://chaturbate.com/affiliates/apistats/?username=${process.env.CHATURBATE_USERNAME}&token=${process.env.CHATURBATE_TOKEN}`,
-      { next: { revalidate: 3600 } }
+      { next: { revalidate: 300 } }
     )
     if (!res.ok) return { platform: "chaturbate", tokens: 0, amount: 0, currency: "usd" }
     const data = await res.json()
@@ -47,7 +47,7 @@ async function fetchStripchat(modelUsername: string): Promise<PlatformEarnings> 
     const today = now.toISOString().split("T")[0]
     const res = await fetch(
       `https://stripchat.com/api/stats/v2/studios/username/${studioUsername}/models/username/${modelUsername}?startDate=${firstDay}&endDate=${today}`,
-      { headers: { "API-Key": apiKey }, next: { revalidate: 3600 } }
+      { headers: { "API-Key": apiKey }, next: { revalidate: 300 } }
     )
     if (!res.ok) return { platform: "stripchat", tokens: 0, amount: 0, currency: "usd" }
     const data = await res.json()
@@ -67,7 +67,7 @@ async function fetchBongaCams(modelUsername: string): Promise<PlatformEarnings> 
     const today = now.toISOString().split("T")[0]
     const res = await fetch(
       `https://bongacams.com/api/v1/stats/model-regular-earnings?username=${modelUsername}&date_from=${firstDay}&date_to=${today}`,
-      { headers: { "ACCESS-KEY": apiKey }, next: { revalidate: 3600 } }
+      { headers: { "ACCESS-KEY": apiKey }, next: { revalidate: 300 } }
     )
     if (!res.ok) return { platform: "bongacams", tokens: 0, amount: 0, currency: "usd" }
     const data = await res.json()

@@ -14,6 +14,7 @@ const platformColors: Record<string, { bg: string; text: string; bar: string }> 
   BongaCams: { bg: "bg-purple-500/10", text: "text-purple-400", bar: "bg-purple-500" },
   SkyPrivate: { bg: "bg-blue-500/10", text: "text-blue-400", bar: "bg-blue-500" },
   "Flirt4Free": { bg: "bg-pink-500/10", text: "text-pink-400", bar: "bg-pink-500" },
+  XModels: { bg: "bg-cyan-500/10", text: "text-cyan-400", bar: "bg-cyan-500" },
 };
 
 const defaultPlatforms: PlatformData[] = [
@@ -22,6 +23,7 @@ const defaultPlatforms: PlatformData[] = [
   { name: "BongaCams", amount: 0 },
   { name: "SkyPrivate", amount: 0 },
   { name: "Flirt4Free", amount: 0 },
+  { name: "XModels", amount: 0 },
 ];
 
 export function PlatformBreakdown({ ghostQuery = "" }: { ghostQuery?: string }) {
