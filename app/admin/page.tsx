@@ -1,13 +1,16 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, Plus, Trash2, Loader2, Search, Users, X, Link2, Percent } from "lucide-react"
+
 interface ModelData {
   id: string; email: string; role: string; platformNick: string; displayName: string;
-  totalEarnings: number; recruitedBy: string | null; referralCode: string;
+  totalEarnings: number; recruiterCommission?: number; commissionRate?: number; recruitedBy: string | null; referralCode: string;
   platformNicks?: Record<string, string>;
 }
 interface Entry { id: string; date: string; amount: number; platform: string }
+
 export default function AdminPage() {
   const [secret, setSecret] = useState("")
   const [authed, setAuthed] = useState(false)
@@ -19,16 +22,21 @@ export default function AdminPage() {
   const [search, setSearch] = useState("")
   const [bulkRows, setBulkRows] = useState([{ date: new Date().toISOString().split("T")[0], amount: "", platform: "chaturbate" }])
   const [bulkLoading, setBulkLoading] = useState(false)
+
   const headers: Record<string, string> = { "x-admin-secret": "huskd-admin-2026", "Content-Type": "application/json" }
+
   const handleAuth = () => { if (secret === "huskd-admin-2026") setAuthed(true); else setMessage("Wrong") }
+
   useEffect(() => {
     if (!authed) return
     fetch("/api/admin/models", { headers }).then(r => r.json()).then(d => setModels(d.models || []))
   }, [authed])
+
   useEffect(() => {
     if (!selectedModel || !authed) return
     fetch(`/api/admin/earnings?userId=${selectedModel}`, { headers }).then(r => r.json()).then(d => setEntries(d.entries || []))
   }, [selectedModel])
+
   const handleBulkAdd = async () => {
     const valid = bulkRows.filter(r => r.amount && parseFloat(r.amount) > 0)
     if (!selectedModel || valid.length === 0) return
@@ -41,10 +49,12 @@ export default function AdminPage() {
     setBulkLoading(false)
     fetch(`/api/admin/earnings?userId=${selectedModel}`, { headers }).then(r => r.json()).then(d => setEntries(d.entries || []))
   }
+
   const handleDeleteEntry = async (id: string) => {
     await fetch("/api/admin/earnings", { method: "DELETE", headers, body: JSON.stringify({ id }) })
     fetch(`/api/admin/earnings?userId=${selectedModel}`, { headers }).then(r => r.json()).then(d => setEntries(d.entries || []))
   }
+
   const handleDeleteAccount = async (userId: string, email: string) => {
     if (!confirm(`Delete ${email}?`)) return
     await fetch("/api/admin/models", { method: "DELETE", headers, body: JSON.stringify({ userId }) })
@@ -52,13 +62,17 @@ export default function AdminPage() {
     setMessage(`Deleted ${email}`)
     if (selectedModel === userId) setSelectedModel("")
   }
+
   const addRow = () => { const l = bulkRows[bulkRows.length - 1]; setBulkRows([...bulkRows, { date: l.date, amount: "", platform: l.platform }]) }
   const updateRow = (i: number, f: string, v: string) => { const r = [...bulkRows]; (r[i] as any)[f] = v; setBulkRows(r) }
+
   const filteredModels = models.filter(m =>
     m.email.toLowerCase().includes(search.toLowerCase()) || (m.platformNick || "").toLowerCase().includes(search.toLowerCase())
   ).sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0))
+
   const selectedData = models.find(m => m.id === selectedModel)
   const real = models.filter(m => !m.email.includes("demo") && m.email !== "a@gmail.com")
+
   if (!authed) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 bg-background">
@@ -71,6 +85,7 @@ export default function AdminPage() {
       </div>
     )
   }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 py-3">
@@ -92,13 +107,16 @@ export default function AdminPage() {
           </div>
         </div>
       </header>
+
       <main className="mx-auto max-w-7xl px-4 py-6">
         {message && (
           <div className="mb-4 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-sm text-primary flex items-center justify-between">
             {message}<button onClick={() => setMessage("")}><X className="h-4 w-4" /></button>
           </div>
         )}
+
         {tab === "dashboard" && <DashboardTab headers={headers} />}
+
         {tab === "earnings" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 flex flex-col gap-4">
@@ -147,6 +165,7 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
         {tab === "payouts_model" && <PayoutsTab models={models.filter(m => m.role === "model")} headers={headers} setMessage={setMessage} label="model" />}
         {tab === "payouts_recruiter" && <PayoutsTab models={models.filter(m => m.role === "recruiter")} headers={headers} setMessage={setMessage} label="recruiter" isRecruiter />}
         {tab === "network" && <ReferralMap models={models} />}
@@ -154,6 +173,7 @@ export default function AdminPage() {
     </div>
   )
 }
+
 function DashboardTab({ headers }: { headers: Record<string, string> }) {
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -211,6 +231,7 @@ function DashboardTab({ headers }: { headers: Record<string, string> }) {
     </div>
   )
 }
+
 function QuickActions({ userId, models, headers, setMessage, onRefresh }: { userId: string; models: ModelData[]; headers: Record<string, string>; setMessage: (m: string) => void; onRefresh: () => void }) {
   const user = models.find(m => m.id === userId)
   const recruiters = models.filter(m => m.role === "recruiter")
@@ -229,9 +250,11 @@ function QuickActions({ userId, models, headers, setMessage, onRefresh }: { user
     </div>
   )
 }
+
 function SB({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return <div className="rounded-xl bg-white/[0.03] border border-white/5 p-3"><p className="text-[10px] text-muted-foreground">{label}</p><p className={`text-lg font-bold ${color || "text-foreground"}`}>{value}</p></div>
 }
+
 function ModelSelector({ models, selected, onSelect, search, onSearch, onDelete }: { models: ModelData[]; selected: string; onSelect: (id: string) => void; search: string; onSearch: (s: string) => void; onDelete: (id: string, email: string) => void }) {
   return (
     <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
@@ -257,6 +280,7 @@ function ModelSelector({ models, selected, onSelect, search, onSearch, onDelete 
     </div>
   )
 }
+
 function PayoutsTab({ models, headers, setMessage, label, isRecruiter }: { models: ModelData[]; headers: Record<string, string>; setMessage: (m: string) => void; label: string; isRecruiter?: boolean }) {
   const [selected, setSelected] = useState("")
   const [payouts, setPayouts] = useState<any[]>([])
@@ -287,7 +311,7 @@ function PayoutsTab({ models, headers, setMessage, label, isRecruiter }: { model
         <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
           <h3 className="mb-3 text-sm font-semibold text-foreground">Select {label}</h3>
           <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm text-foreground" /></div>
-          <div className="max-h-64 overflow-y-auto flex flex-col gap-1">{filtered.map(m => (<button key={m.id} onClick={() => setSelected(m.id)} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm w-full ${selected === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}><span className="text-foreground text-xs truncate">{m.email}</span><span className="text-xs font-bold text-emerald-400 ml-2">${(m.totalEarnings || 0).toLocaleString()}</span></button>))}</div>
+          <div className="max-h-64 overflow-y-auto flex flex-col gap-1">{filtered.map(m => (<button key={m.id} onClick={() => setSelected(m.id)} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm w-full ${selected === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}><span className="text-foreground text-xs truncate">{m.email}</span><span className="text-xs font-bold text-emerald-400 ml-2">${(m.recruiterCommission || m.totalEarnings || 0).toLocaleString()}</span></button>))}</div>
         </div>
         <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
           {!selected ? <p className="text-sm text-muted-foreground py-12 text-center">Select {label}</p> : (
@@ -312,6 +336,7 @@ function PayoutsTab({ models, headers, setMessage, label, isRecruiter }: { model
     </div>
   )
 }
+
 function ReferralMap({ models }: { models: ModelData[] }) {
   const recs = models.filter(m => m.role === "recruiter")
   const mods = models.filter(m => m.role === "model")

@@ -63,6 +63,18 @@ export async function DELETE(request: Request) {
   if (!supabase) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { id } = await request.json()
+  
+  // Get the entry before deleting to know the user_id
+  const { data: entry } = await supabase.from("earnings_daily").select("user_id").eq("id", id).single()
+  
   await supabase.from("earnings_daily").delete().eq("id", id)
+
+  // Recalculate total_lifetime_earnings for the model
+  if (entry?.user_id) {
+    const { data: totals } = await supabase.from("earnings_daily").select("amount").eq("user_id", entry.user_id)
+    const total = totals?.reduce((s, e) => s + e.amount, 0) || 0
+    await supabase.from("profiles").update({ total_lifetime_earnings: total }).eq("id", entry.user_id)
+  }
+
   return NextResponse.json({ success: true })
 }
