@@ -1,9 +1,9 @@
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import { NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { createClient } from "@supabase/supabase-js"
-
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 // GET — fetch daily earnings for a user (or for recruiter's models)
 export async function GET(request: Request) {

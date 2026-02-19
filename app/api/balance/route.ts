@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import { NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { createClient } from "@supabase/supabase-js"
@@ -77,9 +80,6 @@ async function fetchBongaCams(modelUsername: string): Promise<PlatformEarnings> 
     return { platform: "bongacams", tokens: Number(rawTokens), amount: amountUsd, currency: "usd" }
   } catch { return { platform: "bongacams", tokens: 0, amount: 0, currency: "usd" } }
 }
-
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 export async function GET(request: Request) {
   try {
