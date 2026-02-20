@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, Trash2, Loader2, Search, Users, X, Link2, Percent } fr
 
 interface ModelData {
   id: string; email: string; role: string; platformNick: string; displayName: string;
-  totalEarnings: number; recruiterCommission?: number; commissionRate?: number; recruitedBy: string | null; referralCode: string;
+  totalEarnings: number; recruiterCommission?: number; commissionRate?: number; recruitedBy: string | null; referralCode: string; teacherId?: string | null;
   platformNicks?: Record<string, string>;
 }
 interface Entry { id: string; date: string; amount: number; platform: string }
@@ -14,7 +14,7 @@ interface Entry { id: string; date: string; amount: number; platform: string }
 export default function AdminPage() {
   const [secret, setSecret] = useState("")
   const [authed, setAuthed] = useState(false)
-  const [tab, setTab] = useState<"dashboard" | "earnings" | "payouts_model" | "payouts_recruiter" | "network">("dashboard")
+  const [tab, setTab] = useState<"dashboard" | "earnings" | "payouts_model" | "payouts_recruiter" | "network" | "teachers">("dashboard")
   const [models, setModels] = useState<ModelData[]>([])
   const [selectedModel, setSelectedModel] = useState("")
   const [entries, setEntries] = useState<Entry[]>([])
@@ -101,6 +101,7 @@ export default function AdminPage() {
               { id: "payouts_model" as const, l: "Vyplaty modelyam" },
               { id: "payouts_recruiter" as const, l: "Vyplaty rekruteram" },
               { id: "network" as const, l: "Set" },
+              { id: "teachers" as const, l: "Teachers" },
             ]).map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition whitespace-nowrap ${tab === t.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t.l}</button>
             ))}
@@ -169,6 +170,7 @@ export default function AdminPage() {
         {tab === "payouts_model" && <PayoutsTab models={models.filter(m => m.role === "model")} headers={headers} setMessage={setMessage} label="model" />}
         {tab === "payouts_recruiter" && <PayoutsTab models={models.filter(m => m.role === "recruiter")} headers={headers} setMessage={setMessage} label="recruiter" isRecruiter />}
         {tab === "network" && <ReferralMap models={models} />}
+        {tab === "teachers" && <TeachersTab models={models} headers={headers} setMessage={setMessage} onRefresh={() => fetch("/api/admin/models", { headers }).then(r => r.json()).then(d => setModels(d.models || []))} />}
       </main>
     </div>
   )
@@ -378,6 +380,116 @@ function ReferralMap({ models }: { models: ModelData[] }) {
               <div className="flex flex-col gap-1.5">{ul.map(m => (<div key={m.id} className="flex items-center justify-between rounded-lg bg-white/[0.03] px-3 py-1.5"><span className="text-xs text-foreground">{m.platformNick || m.email}</span><span className="text-xs font-bold text-emerald-400">${(m.totalEarnings || 0).toLocaleString()}</span></div>))}</div>
             </div>
           )})()}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TeachersTab({ models, headers, setMessage, onRefresh }: { models: ModelData[]; headers: Record<string, string>; setMessage: (m: string) => void; onRefresh: () => void }) {
+  const [sub, setSub] = useState<"model" | "recruiter">("model")
+  const [selTeacher, setSelTeacher] = useState("")
+  const [selStudent, setSelStudent] = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const teachersModel = models.filter(m => (m as any).isTeacher && m.role === "model")
+  const teachersRecruiter = models.filter(m => (m as any).isTeacher && m.role === "recruiter")
+  const teachers = sub === "model" ? teachersModel : teachersRecruiter
+  const students = sub === "model" ? models.filter(m => m.role === "model") : models.filter(m => m.role === "recruiter")
+
+  const promoteToTeacher = async () => {
+    if (!newEmail) return
+    const user = models.find(m => m.email === newEmail.trim())
+    if (!user) { setMessage("User not found"); return }
+    if ((sub === "model" && user.role !== "model") || (sub === "recruiter" && user.role !== "recruiter")) { setMessage("Wrong role"); setLoading(false); return }
+    setLoading(true)
+    await fetch("/api/admin/quick-action", { method: "POST", headers, body: JSON.stringify({ action: "set_teacher", userId: user.id, isTeacher: true }) })
+    setMessage(`${newEmail} is now teacher`)
+    setNewEmail("")
+    setLoading(false)
+    onRefresh()
+  }
+
+  const linkStudent = async () => {
+    if (!selTeacher || !selStudent) return
+    setLoading(true)
+    await fetch("/api/admin/quick-action", { method: "POST", headers, body: JSON.stringify({ action: "link_teacher", userId: selStudent, teacherId: selTeacher }) })
+    setMessage("Linked")
+    setSelStudent("")
+    setLoading(false)
+    onRefresh()
+  }
+
+  const unlinkStudent = async (studentId: string) => {
+    setLoading(true)
+    await fetch("/api/admin/quick-action", { method: "POST", headers, body: JSON.stringify({ action: "link_teacher", userId: studentId, teacherId: null }) })
+    setMessage("Unlinked")
+    setLoading(false)
+    onRefresh()
+  }
+
+  // Get students linked to selected teacher
+  const linkedStudents = selTeacher ? models.filter(m => (m as any).teacherId === selTeacher) : []
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex gap-2">
+        <button onClick={() => { setSub("model"); setSelTeacher("") }} className={`rounded-lg px-4 py-2 text-sm font-medium transition ${sub === "model" ? "bg-violet-500/20 text-violet-400" : "text-muted-foreground hover:text-foreground"}`}>Teacher Models (8%)</button>
+        <button onClick={() => { setSub("recruiter"); setSelTeacher("") }} className={`rounded-lg px-4 py-2 text-sm font-medium transition ${sub === "recruiter" ? "bg-blue-500/20 text-blue-400" : "text-muted-foreground hover:text-foreground"}`}>Teacher Recruiters (2%)</button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Left: Create/select teacher */}
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Make teacher</h3>
+            <div className="flex gap-2">
+              <input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="user email" className="flex-1 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
+              <button onClick={promoteToTeacher} disabled={loading} className="rounded-lg bg-primary/20 px-4 py-2 text-xs text-primary hover:bg-primary/30">Promote</button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">Teachers ({teachers.length})</h3>
+            <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+              {teachers.length === 0 ? <p className="text-xs text-muted-foreground py-4 text-center">No teachers yet</p> :
+                teachers.map(t => (
+                  <button key={t.id} onClick={() => setSelTeacher(t.id)} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm w-full ${selTeacher === t.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}>
+                    <span className="text-foreground text-xs">{t.email}</span>
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Link students */}
+        <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+          {!selTeacher ? <p className="text-sm text-muted-foreground py-12 text-center">Select teacher</p> : (
+            <>
+              <h3 className="mb-3 text-sm font-semibold text-foreground">Link {sub === "model" ? "model" : "recruiter"}</h3>
+              <div className="flex gap-2 mb-4">
+                <select value={selStudent} onChange={e => setSelStudent(e.target.value)} className="flex-1 rounded-lg border border-border bg-background/50 py-2 px-2 text-xs text-foreground">
+                  <option value="">Select...</option>
+                  {students.map(s => <option key={s.id} value={s.id}>{s.email}</option>)}
+                </select>
+                <button onClick={linkStudent} disabled={!selStudent || loading} className="rounded-lg bg-emerald-600/20 px-4 py-2 text-xs text-emerald-400 hover:bg-emerald-600/30 disabled:opacity-30">Link</button>
+              </div>
+
+              <h4 className="mb-2 text-xs text-muted-foreground">Linked students</h4>
+              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+                {linkedStudents.length === 0 ? <p className="text-[11px] text-muted-foreground/50 py-2">None</p> :
+                  linkedStudents.map(s => (
+                    <div key={s.id} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-3 py-2">
+                      <span className="text-xs text-foreground">{s.email}</span>
+                      <button onClick={() => unlinkStudent(s.id)} className="text-red-400/30 hover:text-red-400 text-[10px]">Unlink</button>
+                    </div>
+                  ))
+                }
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -14,9 +14,12 @@ import { EarningsHeatmap } from "@/components/gamification/earnings-heatmap"
 import { GhostChart } from "@/components/gamification/ghost-chart"
 import { VibeLog } from "@/components/gamification/vibe-log"
 import { createClient } from "@/lib/supabase/client"
+import Link from "next/link"
+import { GraduationCap } from "lucide-react"
 
 function ModelInner() {
   const [hasPlatforms, setHasPlatforms] = useState(true)
+  const [isTeacher, setIsTeacher] = useState(false)
   const searchParams = useSearchParams()
   const ghostId = searchParams.get("ghost")
 
@@ -25,7 +28,8 @@ function ModelInner() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       const uid = ghostId || user?.id
       if (uid) {
-        supabase.from("profiles").select("platform_nicks").eq("id", uid).single().then(({ data }) => {
+        supabase.from("profiles").select("platform_nicks, is_teacher").eq("id", uid).single().then(({ data }) => {
+            if (data?.is_teacher) setIsTeacher(true)
           if (data?.platform_nicks) {
             try {
               const nicks = typeof data.platform_nicks === "string" ? JSON.parse(data.platform_nicks) : data.platform_nicks
@@ -64,6 +68,12 @@ function ModelInner() {
               <h2 className="text-xl font-semibold text-foreground md:text-2xl">Welcome back</h2>
               <p className="text-sm text-muted-foreground">Обзор вашего заработка</p>
             </div>
+            {isTeacher && !ghostId && (
+              <Link href="/dashboard/teacher-model" className="flex items-center gap-3 rounded-2xl bg-violet-500/10 border border-violet-500/20 p-4 hover:bg-violet-500/15 transition">
+                <GraduationCap className="h-5 w-5 text-violet-400" />
+                <div><p className="text-sm font-semibold text-violet-400">Мои ученицы</p><p className="text-[11px] text-muted-foreground">Кабинет учителя</p></div>
+              </Link>
+            )}
             <FinanceCards ghostQuery={gq} />
             <LevelProgress role="model" ghostQuery={gq} />
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 md:gap-6">

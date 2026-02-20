@@ -27,7 +27,11 @@
       "Bash(SRC=\"C:/Users/User/Downloads/huskd-label-v16-temp/huskd-label\")",
       "Bash(SRC=\"C:/Users/User/Downloads/huskd-label-v17-temp/huskd-label\")",
       "Bash(git check-ignore:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(unzip:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)"
     ]
   }
 }

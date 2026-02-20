@@ -11,11 +11,24 @@ import { LevelProgress } from "@/components/gamification/level-progress"
 import { AchievementsPreview } from "@/components/gamification/achievements-preview"
 import { EarningsHeatmap } from "@/components/gamification/earnings-heatmap"
 import { VibeLog } from "@/components/gamification/vibe-log"
+import { createClient } from "@/lib/supabase/client"
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { GraduationCap } from "lucide-react"
 
 function RecruiterInner() {
+  const [isTeacher, setIsTeacher] = useState(false)
   const searchParams = useSearchParams()
   const ghostId = searchParams.get("ghost")
   const gq = ghostId ? `?ghostId=${ghostId}` : ""
+
+  useEffect(() => {
+    if (ghostId) return
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) supabase.from("profiles").select("is_teacher").eq("id", user.id).single().then(({ data }) => { if (data?.is_teacher) setIsTeacher(true) })
+    })
+  }, [])
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
