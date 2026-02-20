@@ -317,6 +317,22 @@ function PayoutsTab({ models, headers, setMessage, label, isRecruiter }: { model
           {!selected ? <p className="text-sm text-muted-foreground py-12 text-center">Select {label}</p> : (
             <>
               <h3 className="mb-4 text-sm font-semibold text-foreground">Payout</h3>
+              {isRecruiter && (() => {
+                const rec = models.find(m => m.id === selected)
+                const comm = rec?.recruiterCommission || 0
+                // Subtract existing payouts
+                const paid = payouts.reduce((s, p) => s + p.amount, 0)
+                const balance = Math.max(0, Math.round((comm - paid) * 100) / 100)
+                return (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-muted-foreground">Balance: <span className="text-emerald-400 font-bold">${balance}</span></span>
+                      <span className="text-[10px] text-muted-foreground">Total: ${comm} / Paid: ${paid}</span>
+                    </div>
+                    <button onClick={() => { if (balance > 0) { setCustomAmount(String(balance)); doPay("commission") } }} disabled={balance <= 0 || payLoading === "auto"} className="w-full rounded-xl bg-blue-600/20 border border-blue-600/30 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-600/30 disabled:opacity-30 transition">Pay ${balance} commission</button>
+                  </div>
+                )
+              })()}
               {!isRecruiter && <div className="grid grid-cols-3 gap-2 mb-4">{platforms.map(p => (<button key={p} onClick={() => doPay(p)} disabled={payLoading === p} className="rounded-xl bg-emerald-600/10 border border-emerald-600/20 px-2 py-2 text-xs font-medium text-emerald-400 hover:bg-emerald-600/20 disabled:opacity-50">{payLoading === p ? "..." : pL[p]}</button>))}</div>}
               <div className="flex gap-2 mb-4">
                 <input type="number" step="0.01" value={customAmount} onChange={e => setCustomAmount(e.target.value)} placeholder="$ amount" className="flex-1 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
