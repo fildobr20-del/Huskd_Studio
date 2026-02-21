@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const { data } = await supabaseAdmin
     .from("profiles")
-    .select("id, email, role, platform_nick, platform_nicks, display_name, total_lifetime_earnings, recruited_by, referral_code, commission_rate, teacher_id, is_teacher")
+    .select("id, email, role, platform_nick, platform_nicks, display_name, total_lifetime_earnings, recruited_by, referral_code, commission_rate, teacher_id, is_teacher, cb_stats_url")
     .order("created_at", { ascending: false })
 
   // For recruiters, calculate their commission from recruited models
@@ -38,6 +38,7 @@ export async function GET(request: Request) {
       commissionRate: m.commission_rate || 10,
       teacherId: m.teacher_id || null,
       isTeacher: m.is_teacher || false,
+      cbStatsUrl: m.cb_stats_url || null,
     }
   })
 

@@ -32,5 +32,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true })
   }
 
+  if (action === "set_cb_stats_url") {
+    await sb.from("profiles").update({ cb_stats_url: body.url || null }).eq("id", userId)
+    return NextResponse.json({ success: true })
+  }
+
   return NextResponse.json({ error: "Unknown action" }, { status: 400 })
 }
