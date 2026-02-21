@@ -16,24 +16,27 @@ export async function POST(request: Request) {
     await sb.from("profiles").update({ recruited_by: body.recruiterId || null }).eq("id", userId)
     return NextResponse.json({ success: true })
   }
-
   if (action === "set_commission") {
     await sb.from("profiles").update({ commission_rate: body.commissionRate }).eq("id", userId)
     return NextResponse.json({ success: true })
   }
-
   if (action === "set_teacher") {
     await sb.from("profiles").update({ is_teacher: body.isTeacher }).eq("id", userId)
     return NextResponse.json({ success: true })
   }
-
   if (action === "link_teacher") {
     await sb.from("profiles").update({ teacher_id: body.teacherId || null }).eq("id", userId)
     return NextResponse.json({ success: true })
   }
-
   if (action === "set_cb_stats_url") {
     await sb.from("profiles").update({ cb_stats_url: body.url || null }).eq("id", userId)
+    return NextResponse.json({ success: true })
+  }
+  if (action === "set_nicks") {
+    // Update platform_nicks JSON and platform_nick (primary nick for display)
+    const nicks = body.nicks || {}
+    const primaryNick = nicks.chaturbate || nicks.stripchat || nicks.bongacams || Object.values(nicks).find(v => v) || ""
+    await sb.from("profiles").update({ platform_nicks: nicks, platform_nick: primaryNick }).eq("id", userId)
     return NextResponse.json({ success: true })
   }
 

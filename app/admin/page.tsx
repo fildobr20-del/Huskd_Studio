@@ -239,18 +239,45 @@ function QuickActions({ userId, models, headers, setMessage, onRefresh }: { user
   const recruiters = models.filter(m => m.role === "recruiter")
   const [selRec, setSelRec] = useState(user?.recruitedBy || "")
   const [comm, setComm] = useState("")
-  const [cbUrl, setCbUrl] = useState((user as any)?.cbStatsUrl || "")
+  const [cbUrl, setCbUrl] = useState("")
+  const [nicks, setNicks] = useState<Record<string, string>>({})
+  const platforms = ["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels"]
+
+  // Reset when user changes
+  useEffect(() => {
+    const u = models.find(m => m.id === userId)
+    if (u) {
+      setSelRec(u.recruitedBy || "")
+      setCbUrl((u as any).cbStatsUrl || "")
+      setNicks(u.platformNicks || {})
+    }
+  }, [userId, models])
+
   const link = async () => { await fetch("/api/admin/quick-action", { method: "POST", headers, body: JSON.stringify({ action: "link_recruiter", userId, recruiterId: selRec || null }) }); setMessage(selRec ? "Linked" : "Unlinked"); onRefresh() }
   const setCom = async () => { if (!comm) return; await fetch("/api/admin/quick-action", { method: "POST", headers, body: JSON.stringify({ action: "set_commission", userId, commissionRate: parseInt(comm) }) }); setMessage(`Commission ${comm}%`); onRefresh() }
   const saveCbUrl = async () => { await fetch("/api/admin/quick-action", { method: "POST", headers, body: JSON.stringify({ action: "set_cb_stats_url", userId, url: cbUrl || null }) }); setMessage(cbUrl ? "CB URL saved" : "CB URL removed"); onRefresh() }
+  const saveNicks = async () => { await fetch("/api/admin/quick-action", { method: "POST", headers, body: JSON.stringify({ action: "set_nicks", userId, nicks }) }); setMessage("Nicks saved"); onRefresh() }
+
   if (!user) return null
   return (
     <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
       <h3 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</h3>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col gap-3">
         {user.role === "model" && <div className="flex items-center gap-2"><Link2 className="h-3.5 w-3.5 text-blue-400" /><select value={selRec} onChange={e => setSelRec(e.target.value)} className="rounded-lg border border-border bg-background/50 py-1.5 px-2 text-xs text-foreground"><option value="">No recruiter</option>{recruiters.map(r => <option key={r.id} value={r.id}>{r.email}</option>)}</select><button onClick={link} className="rounded-lg bg-blue-600/20 px-3 py-1.5 text-xs text-blue-400 hover:bg-blue-600/30">Link</button></div>}
         {user.role === "recruiter" && <div className="flex items-center gap-2"><Percent className="h-3.5 w-3.5 text-amber-400" /><input type="number" value={comm} onChange={e => setComm(e.target.value)} placeholder="%" className="w-16 rounded-lg border border-border bg-background/50 py-1.5 px-2 text-xs text-foreground" /><button onClick={setCom} className="rounded-lg bg-amber-600/20 px-3 py-1.5 text-xs text-amber-400 hover:bg-amber-600/30">Set %</button></div>}
-        {user.role === "model" && <div className="flex items-center gap-2 w-full mt-2"><span className="text-[10px] text-orange-400 whitespace-nowrap">CB API:</span><input value={cbUrl} onChange={e => setCbUrl(e.target.value)} placeholder="https://chaturbate.com/statsapi/?username=...&token=..." className="flex-1 rounded-lg border border-border bg-background/50 py-1.5 px-2 text-[10px] text-foreground" /><button onClick={saveCbUrl} className="rounded-lg bg-orange-600/20 px-3 py-1.5 text-xs text-orange-400 hover:bg-orange-600/30 whitespace-nowrap">Save</button></div>}
+        {user.role === "model" && (
+          <>
+            <div className="flex items-center gap-2 w-full"><span className="text-[10px] text-orange-400 whitespace-nowrap">CB API:</span><input value={cbUrl} onChange={e => setCbUrl(e.target.value)} placeholder="https://chaturbate.com/statsapi/?username=...&token=..." className="flex-1 rounded-lg border border-border bg-background/50 py-1.5 px-2 text-[10px] text-foreground" /><button onClick={saveCbUrl} className="rounded-lg bg-orange-600/20 px-2 py-1.5 text-[10px] text-orange-400 hover:bg-orange-600/30">Save</button></div>
+            <div className="border-t border-white/5 pt-2">
+              <div className="flex items-center justify-between mb-2"><span className="text-[10px] text-muted-foreground uppercase">Platform Nicks</span><button onClick={saveNicks} className="rounded-lg bg-emerald-600/20 px-2 py-1 text-[10px] text-emerald-400 hover:bg-emerald-600/30">Save nicks</button></div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {platforms.map(p => (
+                  <div key={p} className="flex items-center gap-1"><span className="text-[9px] text-muted-foreground w-12 truncate">{p.slice(0,6)}</span><input value={nicks[p] || ""} onChange={e => setNicks({...nicks, [p]: e.target.value})} placeholder="nick" className="flex-1 rounded border border-border bg-background/50 py-1 px-1.5 text-[10px] text-foreground" /></div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
