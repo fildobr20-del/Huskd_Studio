@@ -120,7 +120,7 @@ export async function GET(request: Request) {
         const alreadySaved = savedMonthByPlatform[platform] || 0
         const delta = Math.round((live.amount - alreadySaved) * 100) / 100
 
-        if (delta > 0.50) {
+        if (delta > 0.01) {
           const { data: existing } = await sb
             .from("earnings_daily")
             .select("id, amount")

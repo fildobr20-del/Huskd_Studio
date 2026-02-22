@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
@@ -9,7 +11,7 @@ function getAdmin(request: Request) {
 export async function GET(request: Request) {
   const supabase = getAdmin(request)
   if (!supabase) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-
+  
   const url = new URL(request.url)
   const userId = url.searchParams.get("userId")
   if (!userId) return NextResponse.json({ entries: [] })
@@ -63,10 +65,10 @@ export async function DELETE(request: Request) {
   if (!supabase) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { id } = await request.json()
-
+  
   // Get the entry before deleting to know the user_id
   const { data: entry } = await supabase.from("earnings_daily").select("user_id").eq("id", id).single()
-
+  
   await supabase.from("earnings_daily").delete().eq("id", id)
 
   // Recalculate total_lifetime_earnings for the model

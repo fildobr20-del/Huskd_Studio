@@ -13,6 +13,7 @@ import { AchievementsPreview } from "@/components/gamification/achievements-prev
 import { EarningsHeatmap } from "@/components/gamification/earnings-heatmap"
 import { GhostChart } from "@/components/gamification/ghost-chart"
 import { VibeLog } from "@/components/gamification/vibe-log"
+import { WorkPoll } from "@/components/model-dashboard/work-poll"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { GraduationCap } from "lucide-react"
@@ -74,6 +75,7 @@ function ModelInner() {
                 <div><p className="text-sm font-semibold text-violet-400">Мои ученицы</p><p className="text-[11px] text-muted-foreground">Кабинет учителя</p></div>
               </Link>
             )}
+            <WorkPoll ghostQuery={gq} />
             <FinanceCards ghostQuery={gq} />
             <LevelProgress role="model" ghostQuery={gq} />
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 md:gap-6">

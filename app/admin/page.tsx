@@ -14,7 +14,7 @@ interface Entry { id: string; date: string; amount: number; platform: string }
 export default function AdminPage() {
   const [secret, setSecret] = useState("")
   const [authed, setAuthed] = useState(false)
-  const [tab, setTab] = useState<"dashboard" | "earnings" | "payouts_model" | "payouts_recruiter" | "network" | "teachers">("dashboard")
+  const [tab, setTab] = useState<"dashboard" | "earnings" | "payouts_model" | "payouts_recruiter" | "network" | "teachers" | "data">("dashboard")
   const [models, setModels] = useState<ModelData[]>([])
   const [selectedModel, setSelectedModel] = useState("")
   const [entries, setEntries] = useState<Entry[]>([])
@@ -102,6 +102,7 @@ export default function AdminPage() {
               { id: "payouts_recruiter" as const, l: "Vyplaty rekruteram" },
               { id: "network" as const, l: "Set" },
               { id: "teachers" as const, l: "Teachers" },
+              { id: "data" as const, l: "Data" },
             ]).map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition whitespace-nowrap ${tab === t.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t.l}</button>
             ))}
@@ -170,6 +171,7 @@ export default function AdminPage() {
         {tab === "payouts_model" && <PayoutsTab models={models.filter(m => m.role === "model")} headers={headers} setMessage={setMessage} label="model" />}
         {tab === "payouts_recruiter" && <PayoutsTab models={models.filter(m => m.role === "recruiter")} headers={headers} setMessage={setMessage} label="recruiter" isRecruiter />}
         {tab === "network" && <ReferralMap models={models} />}
+        {tab === "data" && <DataTab models={models} headers={headers} />}
         {tab === "teachers" && <TeachersTab models={models} headers={headers} setMessage={setMessage} onRefresh={() => fetch("/api/admin/models", { headers }).then(r => r.json()).then(d => setModels(d.models || []))} />}
       </main>
     </div>
@@ -412,6 +414,64 @@ function ReferralMap({ models }: { models: ModelData[] }) {
           )})()}
         </div>
       </div>
+    </div>
+  )
+}
+
+function DataTab({ models, headers }: { models: ModelData[]; headers: Record<string, string> }) {
+  const [logs, setLogs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/work-log", { headers }).then(r => r.json()).then(d => { setLogs(d.logs || []); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
+
+  // Group logs by date
+  const byDate: Record<string, any[]> = {}
+  logs.forEach(l => {
+    if (!byDate[l.date]) byDate[l.date] = []
+    byDate[l.date].push(l)
+  })
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a))
+
+  const getModelName = (uid: string) => {
+    const m = models.find(x => x.id === uid)
+    return m?.platformNick || m?.email || uid.slice(0, 8)
+  }
+
+  const platformColors: Record<string, string> = {
+    chaturbate: "bg-orange-500/20 text-orange-400",
+    stripchat: "bg-pink-500/20 text-pink-400",
+    bongacams: "bg-red-500/20 text-red-400",
+    skyprivate: "bg-blue-500/20 text-blue-400",
+    flirt4free: "bg-purple-500/20 text-purple-400",
+    xmodels: "bg-teal-500/20 text-teal-400",
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 className="text-sm font-semibold text-foreground">Work Logs</h2>
+      {loading ? <p className="text-xs text-muted-foreground">Loading...</p> : dates.length === 0 ? <p className="text-xs text-muted-foreground">No data yet</p> : (
+        <div className="flex flex-col gap-3">
+          {dates.map(date => (
+            <div key={date} className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+              <h3 className="text-xs font-bold text-muted-foreground mb-3">{date}</h3>
+              <div className="flex flex-col gap-2">
+                {byDate[date].map((l: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <span className="text-xs text-foreground">{getModelName(l.user_id)}</span>
+                    <div className="flex gap-1.5">
+                      {(l.platforms || []).map((p: string) => (
+                        <span key={p} className={`rounded-md px-2 py-0.5 text-[9px] font-medium ${platformColors[p] || "bg-white/5 text-muted-foreground"}`}>{p}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
