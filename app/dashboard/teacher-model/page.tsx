@@ -9,7 +9,6 @@ import { ArrowLeft, Users, DollarSign, StickyNote, Save, Loader2, Edit3 } from "
 const PLATFORMS = ["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels"]
 
 export default function TeacherModelDashboard() {
-  const [user, setUser] = useState<any>(null)
   const [students, setStudents] = useState<any[]>([])
   const [totalCommission, setTotalCommission] = useState(0)
   const [notes, setNotes] = useState("")
@@ -22,31 +21,30 @@ export default function TeacherModelDashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user: u } } = await supabase.auth.getUser()
-      if (!u) { router.push("/login"); return }
-      const { data: profile } = await supabase.from("profiles").select("role, is_teacher, teacher_notes").eq("id", u.id).single()
-      if (!profile?.is_teacher || profile?.role !== "model") { router.push("/"); return }
-      setUser(u)
-      setNotes(profile?.teacher_notes || "")
-      const { data: myModels } = await supabase.from("profiles").select("id, email, platform_nick, platform_nicks, display_name, total_lifetime_earnings").eq("teacher_id", u.id).eq("role", "model")
-      const models = (myModels || []).map(m => {
-        let nicks: Record<string, string> = {}
-        try { nicks = typeof m.platform_nicks === "string" ? JSON.parse(m.platform_nicks) : (m.platform_nicks || {}) } catch {}
-        return { id: m.id, email: m.email, nick: m.platform_nick || m.display_name || "", nicks, earnings: m.total_lifetime_earnings || 0 }
-      })
-      setStudents(models)
-      setTotalCommission(Math.round(models.reduce((s, m) => s + m.earnings, 0) * 0.08 * 100) / 100)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push("/login"); return }
+
+      const res = await fetch("/api/teacher")
+      if (!res.ok) { router.push("/"); return }
+      const data = await res.json()
+      if (data.role !== "teacher_model") { router.push("/"); return }
+
+      setNotes(data.notes || "")
+      setStudents(data.students || [])
+      setTotalCommission(Math.round((data.students || []).reduce((s: number, m: any) => s + m.earnings, 0) * 0.08 * 100) / 100)
       setLoading(false)
     }
     load()
   }, [])
 
-  const saveNotes = async () => { if (!user) return; setSaving(true); await supabase.from("profiles").update({ teacher_notes: notes }).eq("id", user.id); setSaving(false) }
-
-  const startEditNicks = (student: any) => {
-    setEditingNicks(student.id)
-    setNickEdit(student.nicks || {})
+  const saveNotes = async () => {
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) await supabase.from("profiles").update({ teacher_notes: notes }).eq("id", user.id)
+    setSaving(false)
   }
+
+  const startEditNicks = (student: any) => { setEditingNicks(student.id); setNickEdit(student.nicks || {}) }
 
   const saveStudentNicks = async (studentId: string) => {
     const primaryNick = nickEdit.chaturbate || nickEdit.stripchat || nickEdit.bongacams || Object.values(nickEdit).find(v => v) || ""
@@ -81,7 +79,7 @@ export default function TeacherModelDashboard() {
           <h2 className="mb-4 text-sm font-semibold text-foreground">Ученицы</h2>
           {students.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">Пока нет учениц</p> : (
             <div className="flex flex-col gap-3">
-              {students.sort((a, b) => b.earnings - a.earnings).map(s => (
+              {students.sort((a: any, b: any) => b.earnings - a.earnings).map((s: any) => (
                 <div key={s.id} className="rounded-xl bg-white/[0.02] px-4 py-3">
                   <div className="flex items-center justify-between">
                     <div><span className="text-sm text-foreground">{s.nick || s.email}</span>{s.nick && <span className="ml-2 text-[10px] text-muted-foreground">{s.email}</span>}</div>
@@ -90,15 +88,13 @@ export default function TeacherModelDashboard() {
                       <button onClick={() => editingNicks === s.id ? setEditingNicks(null) : startEditNicks(s)} className="text-muted-foreground hover:text-foreground"><Edit3 className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>
-                  {/* Nick tags */}
-                  {Object.entries(s.nicks).filter(([_, v]) => v).length > 0 && editingNicks !== s.id && (
+                  {Object.entries(s.nicks || {}).filter(([_, v]) => v).length > 0 && editingNicks !== s.id && (
                     <div className="flex gap-1.5 mt-2 flex-wrap">
-                      {Object.entries(s.nicks).filter(([_, v]) => v).map(([p, n]) => (
+                      {Object.entries(s.nicks || {}).filter(([_, v]) => v).map(([p, n]) => (
                         <span key={p} className="text-[9px] text-muted-foreground bg-white/[0.03] rounded px-1.5 py-0.5">{p}: {n as string}</span>
                       ))}
                     </div>
                   )}
-                  {/* Edit nicks */}
                   {editingNicks === s.id && (
                     <div className="mt-3 border-t border-white/5 pt-3">
                       <div className="grid grid-cols-2 gap-1.5">
@@ -109,7 +105,7 @@ export default function TeacherModelDashboard() {
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => saveStudentNicks(s.id)} className="mt-2 w-full rounded-lg bg-emerald-600/20 py-1.5 text-xs text-emerald-400 hover:bg-emerald-600/30">Save nicks</button>
+                      <button onClick={() => saveStudentNicks(s.id)} className="mt-2 w-full rounded-lg bg-emerald-600/20 py-1.5 text-xs text-emerald-400 hover:bg-emerald-600/30">Сохранить ники</button>
                     </div>
                   )}
                 </div>

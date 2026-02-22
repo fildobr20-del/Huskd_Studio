@@ -7,7 +7,6 @@ import Link from "next/link"
 import { ArrowLeft, Users, DollarSign, StickyNote, Save, Loader2, UserPlus } from "lucide-react"
 
 export default function TeacherRecruiterDashboard() {
-  const [user, setUser] = useState<any>(null)
   const [students, setStudents] = useState<any[]>([])
   const [totalCommission, setTotalCommission] = useState(0)
   const [totalModels, setTotalModels] = useState(0)
@@ -19,30 +18,29 @@ export default function TeacherRecruiterDashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user: u } } = await supabase.auth.getUser()
-      if (!u) { router.push("/login"); return }
-      const { data: profile } = await supabase.from("profiles").select("role, is_teacher, teacher_notes").eq("id", u.id).single()
-      if (!profile?.is_teacher || profile?.role !== "recruiter") { router.push("/"); return }
-      setUser(u)
-      setNotes(profile?.teacher_notes || "")
-      const { data: myRecruiters } = await supabase.from("profiles").select("id, email").eq("teacher_id", u.id).eq("role", "recruiter")
-      const { data: allModels } = await supabase.from("profiles").select("id, recruited_by, total_lifetime_earnings").eq("role", "model")
-      const models = allModels || []
-      let grandTotal = 0; let grandModels = 0
-      const data = (myRecruiters || []).map(r => {
-        const rm = models.filter(m => m.recruited_by === r.id)
-        const gross = rm.reduce((s, m) => s + (m.total_lifetime_earnings || 0), 0)
-        const my = Math.round(gross * 0.02 * 100) / 100
-        grandTotal += my; grandModels += rm.length
-        return { id: r.id, email: r.email, modelsCount: rm.length, gross: Math.round(gross * 100) / 100, my }
-      })
-      setStudents(data); setTotalCommission(Math.round(grandTotal * 100) / 100); setTotalModels(grandModels)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push("/login"); return }
+
+      const res = await fetch("/api/teacher")
+      if (!res.ok) { router.push("/"); return }
+      const data = await res.json()
+      if (data.role !== "teacher_recruiter") { router.push("/"); return }
+
+      setNotes(data.notes || "")
+      setStudents(data.students || [])
+      setTotalModels(data.totalModels || 0)
+      setTotalCommission(data.totalCommission || 0)
       setLoading(false)
     }
     load()
   }, [])
 
-  const saveNotes = async () => { if (!user) return; setSaving(true); await supabase.from("profiles").update({ teacher_notes: notes }).eq("id", user.id); setSaving(false) }
+  const saveNotes = async () => {
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) await supabase.from("profiles").update({ teacher_notes: notes }).eq("id", user.id)
+    setSaving(false)
+  }
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
 
@@ -73,7 +71,7 @@ export default function TeacherRecruiterDashboard() {
           <h2 className="mb-4 text-sm font-semibold text-foreground">Ученики-рекрутеры</h2>
           {students.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">Пока нет учеников</p> : (
             <div className="flex flex-col gap-2">
-              {students.sort((a, b) => b.my - a.my).map(s => (
+              {students.sort((a: any, b: any) => b.my - a.my).map((s: any) => (
                 <div key={s.id} className="flex items-center justify-between rounded-xl bg-white/[0.02] px-4 py-3">
                   <div><span className="text-sm text-foreground">{s.email}</span><span className="ml-2 text-[10px] text-muted-foreground">{s.modelsCount} моделей</span></div>
                   <div className="text-right"><span className="text-sm font-bold text-emerald-400">${s.my}</span><span className="ml-2 text-[10px] text-muted-foreground">(${s.gross} gross)</span></div>
