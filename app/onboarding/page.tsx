@@ -1,8 +1,10 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react"
+
 const platforms = [
   { id: "chaturbate", name: "Chaturbate", color: "#f68b24" },
   { id: "stripchat", name: "StripChat", color: "#e74c3c" },
@@ -11,6 +13,7 @@ const platforms = [
   { id: "flirt4free", name: "Flirt4Free", color: "#e91e8c" },
   { id: "xmodels", name: "XModels", color: "#00bcd4" },
 ]
+
 export default function OnboardingPage() {
   const [nicks, setNicks] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -18,12 +21,12 @@ export default function OnboardingPage() {
   const [error, setError] = useState("")
   const [userId, setUserId] = useState("")
   const router = useRouter()
+
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { router.push("/login"); return }
       setUserId(user.id)
-      // Load existing nicks
       supabase.from("profiles").select("platform_nicks").eq("id", user.id).single().then(({ data }) => {
         if (data?.platform_nicks) {
           try {
@@ -34,36 +37,54 @@ export default function OnboardingPage() {
       })
     })
   }, [router])
+
   const checkNick = async (platform: string, nick: string) => {
     if (!nick.trim()) { setErrors(e => ({ ...e, [platform]: "" })); return }
-    const res = await fetch("/api/check-nick", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, nick: nick.trim(), userId }),
-    })
-    const data = await res.json()
-    if (!data.available) {
-      setErrors(e => ({ ...e, [platform]: "Этот ник уже занят другим пользователем" }))
-    } else {
-      setErrors(e => ({ ...e, [platform]: "" }))
+    try {
+      const res = await fetch("/api/check-nick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform, nick: nick.trim(), userId }),
+      })
+      if (!res.ok) return // Don't block on network errors
+      const data = await res.json()
+      if (!data.available) {
+        setErrors(e => ({ ...e, [platform]: "Этот ник уже занят другим пользователем" }))
+      } else {
+        setErrors(e => ({ ...e, [platform]: "" }))
+      }
+    } catch {
+      // Network error — don't block the user
     }
   }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const filledNicks = Object.entries(nicks).filter(([_, v]) => v.trim())
     if (filledNicks.length === 0) { setError("Введите ник хотя бы на одной платформе"); return }
     if (Object.values(errors).some(e => e)) { setError("Исправьте ошибки"); return }
+
     setLoading(true)
     setError("")
     const supabase = createClient()
-    const platformNicks = JSON.stringify(Object.fromEntries(filledNicks))
+
+    // Save as JSON object, not string
+    const nicksObject = Object.fromEntries(filledNicks)
+    const primaryNick = filledNicks[0][1]
+
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ platform_nick: filledNicks[0][1], platform_nicks: platformNicks })
+      .update({ platform_nick: primaryNick, platform_nicks: nicksObject })
       .eq("id", userId)
-    if (updateError) { setError("Ошибка сохранения: " + updateError.message); setLoading(false); return }
+
+    if (updateError) {
+      setError("Ошибка сохранения: " + updateError.message)
+      setLoading(false)
+      return
+    }
     router.push("/dashboard/model")
   }
+
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -79,7 +100,7 @@ export default function OnboardingPage() {
           </div>
           <h1 className="mb-2 font-serif text-2xl font-bold text-foreground">Настройка профиля</h1>
           <p className="mb-4 text-sm text-muted-foreground">Введите ваши ники на платформах — так мы привяжем статистику. Один ник = один пользователь.</p>
-
+          
           <div className="mb-6 rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
             <p className="text-sm text-blue-300 mb-3">Для прохождения регистрации на сайтах обратитесь к саппортам нашей команды</p>
             <div className="flex gap-3">
@@ -93,6 +114,7 @@ export default function OnboardingPage() {
               </a>
             </div>
           </div>
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {platforms.map((p) => (
               <div key={p.id}>
@@ -120,7 +142,9 @@ export default function OnboardingPage() {
                 )}
               </div>
             ))}
+
             {error && <p className="text-sm text-destructive">{error}</p>}
+
             <button type="submit" disabled={loading} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-gold-gradient py-3 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-50">
               {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Сохранение...</> : <><CheckCircle2 className="h-4 w-4" /> Сохранить и перейти в кабинет</>}
             </button>
