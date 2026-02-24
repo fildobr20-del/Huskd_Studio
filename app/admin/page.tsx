@@ -548,8 +548,8 @@ function DataTab({ models, headers }: { models: ModelData[]; headers: Record<str
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-2">
-        <button onClick={() => setSubtab("operations")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${subtab === "operations" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>\u{1F4CB} Операции</button>
-        <button onClick={() => setSubtab("worklogs")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${subtab === "worklogs" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>\u{1F4C5} Рабочие дни</button>
+        <button onClick={() => setSubtab("operations")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${subtab === "operations" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>{"\u{1F4CB}"} Операции</button>
+        <button onClick={() => setSubtab("worklogs")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${subtab === "worklogs" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>{"\u{1F4C5}"} Рабочие дни</button>
       </div>
 
       {loading ? <p className="text-xs text-muted-foreground">Loading...</p> : subtab === "operations" ? (
