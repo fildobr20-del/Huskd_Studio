@@ -96,13 +96,13 @@ export default function AdminPage() {
           </div>
           <div className="flex gap-1 overflow-x-auto">
             {([
-              { id: "dashboard" as const, l: "Obzor" },
-              { id: "earnings" as const, l: "Dannye" },
-              { id: "payouts_model" as const, l: "Vyplaty modelyam" },
-              { id: "payouts_recruiter" as const, l: "Vyplaty rekruteram" },
-              { id: "network" as const, l: "Set" },
-              { id: "teachers" as const, l: "Teachers" },
-              { id: "data" as const, l: "Data" },
+              { id: "dashboard" as const, l: "Обзор" },
+              { id: "earnings" as const, l: "Начисления" },
+              { id: "payouts_model" as const, l: "Выплаты моделям" },
+              { id: "payouts_recruiter" as const, l: "Выплаты рекрутерам" },
+              { id: "network" as const, l: "Сеть" },
+              { id: "teachers" as const, l: "Учителя" },
+              { id: "data" as const, l: "Журнал" },
             ]).map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition whitespace-nowrap ${tab === t.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t.l}</button>
             ))}
@@ -326,63 +326,147 @@ function PayoutsTab({ models, headers, setMessage, label, isRecruiter }: { model
   const [showAll, setShowAll] = useState(false)
   const platforms = isRecruiter ? ["commission"] : ["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels"]
   const pL: Record<string, string> = { chaturbate: "CB", stripchat: "SC", bongacams: "BC", skyprivate: "SP", flirt4free: "F4F", xmodels: "XM", commission: "Commission" }
+
   useEffect(() => { if (selected) fetch(`/api/admin/payouts?userId=${selected}`, { headers }).then(r => r.json()).then(d => setPayouts(d.payouts || [])) }, [selected])
-  useEffect(() => { if (showAll) fetch(`/api/admin/payouts?all=true`, { headers }).then(r => r.json()).then(d => setAllPayouts(d.payouts || [])) }, [showAll])
+  useEffect(() => { fetch(`/api/admin/payouts?all=true`, { headers }).then(r => r.json()).then(d => setAllPayouts(d.payouts || [])) }, [])
+
   const doPay = async (p: string) => {
     if (!selected) return; setPayLoading(p)
     const amt = customAmount ? parseFloat(customAmount) : undefined
     const res = await fetch("/api/admin/payouts", { method: "POST", headers, body: JSON.stringify({ userId: selected, platform: p, amount: amt }) })
     const d = await res.json()
-    if (d.success) { setMessage(`Paid ${pL[p]}: $${d.amount}`); setCustomAmount(""); fetch(`/api/admin/payouts?userId=${selected}`, { headers }).then(r => r.json()).then(d => setPayouts(d.payouts || [])) }
+    if (d.success) { setMessage(`Paid ${pL[p]}: $${d.amount}`); setCustomAmount(""); fetch(`/api/admin/payouts?userId=${selected}`, { headers }).then(r => r.json()).then(d => setPayouts(d.payouts || [])); fetch(`/api/admin/payouts?all=true`, { headers }).then(r => r.json()).then(d => setAllPayouts(d.payouts || [])) }
     else setMessage(d.error || "Error")
     setPayLoading(null)
   }
   const delPay = async (id: string) => { await fetch("/api/admin/payouts", { method: "DELETE", headers, body: JSON.stringify({ id }) }); setPayouts(p => p.filter(x => x.id !== id)); setAllPayouts(p => p.filter(x => x.id !== id)); setMessage("Deleted") }
+
+  const today = new Date().toISOString().split("T")[0]
+  const paidTodayIds = new Set(allPayouts.filter(p => p.created_at?.startsWith(today)).map(p => p.user_id))
+
   const filtered = models.filter(m => m.email.toLowerCase().includes(search.toLowerCase()) || (m.platformNick || "").toLowerCase().includes(search.toLowerCase())).sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0))
+  const selectedUser = models.find(m => m.id === selected)
+
+  // Calculate totals for models
+  const getModelShare = (m: ModelData) => Math.round((m.totalEarnings || 0) * 0.7 * 100) / 100
+  const getModelPaid = (userId: string) => allPayouts.filter(p => p.user_id === userId).reduce((s, p) => s + p.amount, 0)
+
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
-          <h3 className="mb-3 text-sm font-semibold text-foreground">Select {label}</h3>
-          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm text-foreground" /></div>
-          <div className="max-h-64 overflow-y-auto flex flex-col gap-1">{filtered.map(m => (<button key={m.id} onClick={() => setSelected(m.id)} className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm w-full ${selected === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}><span className="text-foreground text-xs truncate">{m.email}</span><span className="text-xs font-bold text-emerald-400 ml-2">${(m.recruiterCommission || m.totalEarnings || 0).toLocaleString()}</span></button>))}</div>
+          <h3 className="mb-3 text-sm font-semibold text-foreground flex items-center gap-2">
+            {isRecruiter ? "\u{1F465} Рекрутеры" : "\u{1F451} Модели"}
+            <span className="text-[10px] text-muted-foreground">({filtered.length})</span>
+          </h3>
+          <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск..." className="w-full rounded-xl border border-border bg-background/50 py-2.5 pl-10 pr-4 text-sm text-foreground" /></div>
+          <div className="max-h-72 overflow-y-auto flex flex-col gap-1">
+            {filtered.map(m => {
+              const share = isRecruiter ? (m.recruiterCommission || 0) : getModelShare(m)
+              const paid = getModelPaid(m.id)
+              const owe = Math.round(Math.max(0, share - paid) * 100) / 100
+              const paidToday = paidTodayIds.has(m.id)
+              return (
+                <button key={m.id} onClick={() => setSelected(m.id)} className={`flex items-center justify-between rounded-xl px-3 py-2.5 text-sm w-full transition ${selected === m.id ? "bg-primary/10 border border-primary/20" : "hover:bg-white/[0.03]"}`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    {paidToday && <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" title="Оплачено сегодня" />}
+                    <span className="text-foreground text-xs truncate">{m.platformNick || m.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {!isRecruiter && <span className="text-[10px] text-muted-foreground">70%: ${share}</span>}
+                    <span className={`text-xs font-bold ${owe > 0 ? "text-amber-400" : "text-emerald-400"}`}>{owe > 0 ? `$${owe}` : "\u2713"}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
         <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
-          {!selected ? <p className="text-sm text-muted-foreground py-12 text-center">Select {label}</p> : (
+          {!selected ? <p className="text-sm text-muted-foreground py-12 text-center">Выберите {isRecruiter ? "рекрутера" : "модель"}</p> : (
             <>
-              <h3 className="mb-4 text-sm font-semibold text-foreground">Payout</h3>
-              {isRecruiter && (() => {
-                const rec = models.find(m => m.id === selected)
-                const comm = rec?.recruiterCommission || 0
-                // Subtract existing payouts
+              <h3 className="mb-3 text-sm font-semibold text-foreground">{selectedUser?.platformNick || selectedUser?.email}</h3>
+
+              {/* Balance info */}
+              {(() => {
+                const gross = isRecruiter ? (selectedUser?.recruiterCommission || 0) : (selectedUser?.totalEarnings || 0)
+                const share = isRecruiter ? gross : Math.round(gross * 0.7 * 100) / 100
                 const paid = payouts.reduce((s, p) => s + p.amount, 0)
-                const balance = Math.max(0, Math.round((comm - paid) * 100) / 100)
+                const owe = Math.round(Math.max(0, share - paid) * 100) / 100
                 return (
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-muted-foreground">Balance: <span className="text-emerald-400 font-bold">${balance}</span></span>
-                      <span className="text-[10px] text-muted-foreground">Total: ${comm} / Paid: ${paid}</span>
+                  <div className="rounded-xl bg-white/[0.03] border border-white/5 p-4 mb-4">
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">{isRecruiter ? "Комиссия" : "Gross"}</p>
+                        <p className="text-sm font-bold text-foreground">${isRecruiter ? gross : selectedUser?.totalEarnings}</p>
+                      </div>
+                      {!isRecruiter && <div>
+                        <p className="text-[10px] text-muted-foreground">70% модели</p>
+                        <p className="text-sm font-bold text-violet-400">${share}</p>
+                      </div>}
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Выплачено</p>
+                        <p className="text-sm font-bold text-emerald-400">${Math.round(paid * 100) / 100}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Должен</p>
+                        <p className={`text-sm font-bold ${owe > 0 ? "text-amber-400" : "text-emerald-400"}`}>${owe}</p>
+                      </div>
                     </div>
-                    <button onClick={() => { if (balance > 0) { setCustomAmount(String(balance)); doPay("commission") } }} disabled={balance <= 0 || payLoading === "auto"} className="w-full rounded-xl bg-blue-600/20 border border-blue-600/30 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-600/30 disabled:opacity-30 transition">Pay ${balance} commission</button>
                   </div>
                 )
               })()}
-              {!isRecruiter && <div className="grid grid-cols-3 gap-2 mb-4">{platforms.map(p => (<button key={p} onClick={() => doPay(p)} disabled={payLoading === p} className="rounded-xl bg-emerald-600/10 border border-emerald-600/20 px-2 py-2 text-xs font-medium text-emerald-400 hover:bg-emerald-600/20 disabled:opacity-50">{payLoading === p ? "..." : pL[p]}</button>))}</div>}
+
+              {/* Quick pay buttons for models */}
+              {!isRecruiter && <div className="grid grid-cols-3 gap-2 mb-3">{platforms.map(p => (<button key={p} onClick={() => doPay(p)} disabled={payLoading === p} className="rounded-xl bg-emerald-600/10 border border-emerald-600/20 px-2 py-2 text-xs font-medium text-emerald-400 hover:bg-emerald-600/20 disabled:opacity-50 transition">{payLoading === p ? "..." : pL[p]}</button>))}</div>}
+
+              {/* Custom amount */}
               <div className="flex gap-2 mb-4">
-                <input type="number" step="0.01" value={customAmount} onChange={e => setCustomAmount(e.target.value)} placeholder="$ amount" className="flex-1 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
+                <input type="number" step="0.01" value={customAmount} onChange={e => setCustomAmount(e.target.value)} placeholder="$ сумма" className="flex-1 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
                 <select value={customPlatform} onChange={e => setCustomPlatform(e.target.value)} className="rounded-lg border border-border bg-background/50 py-2 px-2 text-xs text-foreground">{platforms.map(p => <option key={p} value={p}>{pL[p]}</option>)}</select>
-                <button onClick={() => doPay(customPlatform)} disabled={!customAmount} className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50">+</button>
+                <button onClick={() => doPay(customPlatform)} disabled={!customAmount || payLoading !== null} className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50 transition">Оплатить</button>
               </div>
-              {payouts.length > 0 && <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">{payouts.map(p => (<div key={p.id} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-3 py-2"><div><span className="text-xs text-foreground">{new Date(p.created_at).toLocaleDateString("ru-RU")}</span><span className="ml-2 text-[10px] text-muted-foreground uppercase">{p.platform}</span></div><div className="flex items-center gap-2"><span className="text-sm font-bold text-emerald-400">${p.amount}</span><button onClick={() => delPay(p.id)} className="text-red-400/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button></div></div>))}</div>}
+
+              {/* Payout history */}
+              {payouts.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-2 uppercase">История выплат</p>
+                  <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">{payouts.map(p => (
+                    <div key={p.id} className={`flex items-center justify-between rounded-lg px-3 py-2 ${p.created_at?.startsWith(today) ? "bg-emerald-500/5 border border-emerald-500/10" : "bg-white/[0.02]"}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-foreground">{new Date(p.created_at).toLocaleDateString("ru-RU")}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase">{p.platform}</span>
+                        {p.created_at?.startsWith(today) && <span className="text-[9px] text-emerald-400">сегодня</span>}
+                      </div>
+                      <div className="flex items-center gap-2"><span className="text-sm font-bold text-emerald-400">${p.amount}</span><button onClick={() => delPay(p.id)} className="text-red-400/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button></div>
+                    </div>
+                  ))}</div>
+                </div>
+              )}
             </>
           )}
         </div>
       </div>
-      <div className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
-        <div className="flex items-center justify-between mb-3"><h3 className="text-sm font-semibold text-foreground">All payouts</h3><button onClick={() => setShowAll(!showAll)} className="text-xs text-primary hover:underline">{showAll ? "Hide" : "Show"}</button></div>
-        {showAll && (allPayouts.length === 0 ? <p className="text-xs text-muted-foreground text-center py-4">No payouts</p> :
-          <div className="flex flex-col gap-1.5 max-h-96 overflow-y-auto">{allPayouts.map(p => (<div key={p.id} className="flex items-center justify-between rounded-lg bg-white/[0.02] px-3 py-2"><div className="flex items-center gap-3"><span className="text-xs font-medium text-foreground">{p.userLabel}</span><span className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("ru-RU")}</span><span className="text-[10px] text-muted-foreground uppercase">{p.platform}</span></div><div className="flex items-center gap-2"><span className="text-sm font-bold text-emerald-400">${p.amount}</span><button onClick={() => delPay(p.id)} className="text-red-400/30 hover:text-red-400"><Trash2 className="h-3.5 w-3.5" /></button></div></div>))}</div>)}
-      </div>
+
+      {/* Today's payouts summary */}
+      {(() => {
+        const todayPayouts = allPayouts.filter(p => p.created_at?.startsWith(today))
+        if (todayPayouts.length === 0) return null
+        const todayTotal = Math.round(todayPayouts.reduce((s, p) => s + p.amount, 0) * 100) / 100
+        return (
+          <div className="rounded-2xl bg-emerald-500/5 border border-emerald-500/10 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-emerald-400">\u2705 Выплачено сегодня: ${todayTotal}</h3>
+              <span className="text-[10px] text-muted-foreground">{todayPayouts.length} выплат</span>
+            </div>
+            <div className="flex flex-col gap-1">{todayPayouts.map(p => (
+              <div key={p.id} className="flex items-center justify-between text-xs">
+                <span className="text-foreground">{p.userLabel || "?"}</span>
+                <div className="flex items-center gap-2"><span className="text-muted-foreground uppercase text-[10px]">{p.platform}</span><span className="font-bold text-emerald-400">${p.amount}</span></div>
+              </div>
+            ))}</div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -420,19 +504,21 @@ function ReferralMap({ models }: { models: ModelData[] }) {
 
 function DataTab({ models, headers }: { models: ModelData[]; headers: Record<string, string> }) {
   const [logs, setLogs] = useState<any[]>([])
+  const [payouts, setPayouts] = useState<any[]>([])
+  const [earnings, setEarnings] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [subtab, setSubtab] = useState<"operations"|"worklogs">("operations")
 
   useEffect(() => {
-    fetch("/api/work-log", { headers }).then(r => r.json()).then(d => { setLogs(d.logs || []); setLoading(false) }).catch(() => setLoading(false))
+    Promise.all([
+      fetch("/api/work-log", { headers }).then(r => r.json()),
+      fetch("/api/admin/payouts?all=true", { headers }).then(r => r.json()),
+    ]).then(([wl, pl]) => {
+      setLogs(wl.logs || [])
+      setPayouts(pl.payouts || [])
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
-
-  // Group logs by date
-  const byDate: Record<string, any[]> = {}
-  logs.forEach(l => {
-    if (!byDate[l.date]) byDate[l.date] = []
-    byDate[l.date].push(l)
-  })
-  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a))
 
   const getModelName = (uid: string) => {
     const m = models.find(x => x.id === uid)
@@ -446,30 +532,67 @@ function DataTab({ models, headers }: { models: ModelData[]; headers: Record<str
     skyprivate: "bg-blue-500/20 text-blue-400",
     flirt4free: "bg-purple-500/20 text-purple-400",
     xmodels: "bg-teal-500/20 text-teal-400",
+    commission: "bg-amber-500/20 text-amber-400",
   }
+
+  // All operations sorted by date desc
+  const operations = [
+    ...payouts.map(p => ({ type: "payout" as const, date: p.created_at, user: p.userLabel || getModelName(p.user_id), platform: p.platform, amount: p.amount })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  // Group logs by date
+  const byDate: Record<string, any[]> = {}
+  logs.forEach(l => { if (!byDate[l.date]) byDate[l.date] = []; byDate[l.date].push(l) })
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a))
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-sm font-semibold text-foreground">Work Logs</h2>
-      {loading ? <p className="text-xs text-muted-foreground">Loading...</p> : dates.length === 0 ? <p className="text-xs text-muted-foreground">No data yet</p> : (
-        <div className="flex flex-col gap-3">
-          {dates.map(date => (
-            <div key={date} className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
-              <h3 className="text-xs font-bold text-muted-foreground mb-3">{date}</h3>
-              <div className="flex flex-col gap-2">
-                {byDate[date].map((l: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <span className="text-xs text-foreground">{getModelName(l.user_id)}</span>
-                    <div className="flex gap-1.5">
-                      {(l.platforms || []).map((p: string) => (
-                        <span key={p} className={`rounded-md px-2 py-0.5 text-[9px] font-medium ${platformColors[p] || "bg-white/5 text-muted-foreground"}`}>{p}</span>
-                      ))}
-                    </div>
+      <div className="flex gap-2">
+        <button onClick={() => setSubtab("operations")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${subtab === "operations" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>\u{1F4CB} Операции</button>
+        <button onClick={() => setSubtab("worklogs")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${subtab === "worklogs" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}>\u{1F4C5} Рабочие дни</button>
+      </div>
+
+      {loading ? <p className="text-xs text-muted-foreground">Loading...</p> : subtab === "operations" ? (
+        <div className="flex flex-col gap-1.5 max-h-[600px] overflow-y-auto">
+          {operations.length === 0 ? <p className="text-xs text-muted-foreground text-center py-8">Нет операций</p> :
+            operations.map((op, i) => (
+              <div key={i} className="flex items-center justify-between rounded-xl bg-white/[0.02] border border-white/5 px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs ${op.type === "payout" ? "text-emerald-400" : "text-blue-400"}`}>{op.type === "payout" ? "\u{1F4B8}" : "\u{1F4B0}"}</span>
+                  <div>
+                    <span className="text-xs text-foreground font-medium">{op.user}</span>
+                    <span className={`ml-2 rounded-md px-1.5 py-0.5 text-[9px] font-medium ${platformColors[op.platform] || "bg-white/5 text-muted-foreground"}`}>{op.platform}</span>
                   </div>
-                ))}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-emerald-400">${op.amount}</span>
+                  <span className="text-[10px] text-muted-foreground">{new Date(op.date).toLocaleDateString("ru-RU")} {new Date(op.date).toLocaleTimeString("ru-RU", {hour:"2-digit",minute:"2-digit"})}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          }
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {dates.length === 0 ? <p className="text-xs text-muted-foreground text-center py-8">Нет данных</p> :
+            dates.map(date => (
+              <div key={date} className="rounded-2xl bg-white/[0.02] border border-white/5 p-4">
+                <h3 className="text-xs font-bold text-muted-foreground mb-3">{date}</h3>
+                <div className="flex flex-col gap-2">
+                  {byDate[date].map((l: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <span className="text-xs text-foreground">{getModelName(l.user_id)}</span>
+                      <div className="flex gap-1.5">
+                        {(l.platforms || []).map((p: string) => (
+                          <span key={p} className={`rounded-md px-2 py-0.5 text-[9px] font-medium ${platformColors[p] || "bg-white/5 text-muted-foreground"}`}>{p}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          }
         </div>
       )}
     </div>
