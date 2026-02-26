@@ -10,11 +10,6 @@ const PLATFORM_NAMES: Record<string, string> = {
   skyprivate: "SkyPrivate", flirt4free: "Flirt4Free", xmodels: "XModels",
 }
 
-// NO platform API calls — all data comes from:
-// 1. Scraper → /api/scraper → earnings_daily
-// 2. CB cron polling → /api/cron/sync-cb → earnings_daily  
-// 3. Manual admin input → earnings_daily
-
 export async function GET(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
@@ -26,7 +21,7 @@ export async function GET(request: Request) {
     const uid = ghostId || user.id
 
     const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data: profile } = await sb.from("profiles").select("role, platform_nick, platform_nicks, is_demo").eq("id", uid).single()
+    const { data: profile } = await sb.from("profiles").select("role, platform_nick, platform_nicks, is_demo, commission_rate").eq("id", uid).single()
     if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 })
 
     if (profile.is_demo) {
@@ -40,10 +35,47 @@ export async function GET(request: Request) {
       })
     }
 
+    // === RECRUITER BALANCE ===
+    if (profile.role === "recruiter") {
+      const rate = (profile.commission_rate || 10) / 100
+
+      // Find all models recruited by this recruiter
+      const { data: myModels } = await sb
+        .from("profiles")
+        .select("id, total_lifetime_earnings")
+        .eq("recruited_by", uid)
+        .eq("role", "model")
+
+      // Total commission = sum of all recruited models' gross * rate
+      const totalCommission = Math.round(
+        (myModels || []).reduce((s, m) => s + (m.total_lifetime_earnings || 0), 0) * rate * 100
+      ) / 100
+
+      // Recruiter's payouts
+      const { data: payouts } = await sb
+        .from("payouts")
+        .select("amount")
+        .eq("user_id", uid)
+        .eq("status", "completed")
+      const totalPaid = Math.round(
+        (payouts || []).reduce((s, p) => s + Number(p.amount), 0) * 100
+      ) / 100
+
+      const currentBalance = Math.round(Math.max(0, totalCommission - totalPaid) * 100) / 100
+
+      return NextResponse.json({
+        totalGross: totalCommission,
+        modelShare: 0,
+        recruiterShare: currentBalance,
+        lifetime: totalCommission,
+        platformBreakdown: [],
+      })
+    }
+
+    // === MODEL BALANCE ===
     let nicks: Record<string, string> = {}
     try { nicks = profile.platform_nicks ? (typeof profile.platform_nicks === "string" ? JSON.parse(profile.platform_nicks) : profile.platform_nicks) : {} } catch {}
 
-    // === ALL DATA FROM earnings_daily ONLY ===
     const { data: allEarnings } = await sb
       .from("earnings_daily")
       .select("amount, platform, date")
@@ -58,12 +90,10 @@ export async function GET(request: Request) {
       savedAllByPlatform[e.platform] = (savedAllByPlatform[e.platform] || 0) + amt
     })
 
-    // === PAYOUTS ===
     const { data: payouts } = await sb.from("payouts").select("amount, platform").eq("user_id", uid).eq("status", "completed")
     const paidByPlatform: Record<string, number> = {}
     payouts?.forEach(p => { paidByPlatform[p.platform] = (paidByPlatform[p.platform] || 0) + p.amount })
 
-    // === BREAKDOWN ===
     const allPlatforms = ["chaturbate", "stripchat", "bongacams", "skyprivate", "flirt4free", "xmodels"]
     const breakdown: { name: string; amount: number; tokens: number }[] = []
     let totalBalance = 0

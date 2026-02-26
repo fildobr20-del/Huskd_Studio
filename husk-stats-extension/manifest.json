@@ -1,0 +1,79 @@
+{
+  "manifest_version": 3,
+  "name": "Husk Label — Stats Collector",
+  "version": "2.5.0",
+  "description": "Автоматически собирает статистику заработка моделей с платформ и отправляет в Husk Label",
+
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "tabs",
+    "activeTab",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://huskdlabl.site/*",
+    "https://*.stripchat.com/*",
+    "https://*.skyprivate.com/*",
+    "https://*.flirt4free.com/*",
+    "https://*.xmodels.com/*",
+    "https://*.chaturbate.com/*",
+    "https://*.fansly.com/*",
+    "https://apiv3.fansly.com/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Husk Label Stats",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://*.stripchat.com/*"],
+      "js": ["content-scripts/utils.js", "content-scripts/stripchat.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.skyprivate.com/*"],
+      "js": ["content-scripts/utils.js", "content-scripts/skyprivate.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.flirt4free.com/*"],
+      "js": ["content-scripts/utils.js", "content-scripts/flirt4free.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.xmodels.com/*"],
+      "js": ["content-scripts/utils.js", "content-scripts/xmodels.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.chaturbate.com/*"],
+      "js": ["content-scripts/utils.js", "content-scripts/chaturbate.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.fansly.com/*"],
+      "js": ["content-scripts/utils.js", "content-scripts/fansly.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -8,7 +8,7 @@ const TOKEN_RATES: Record<string, number> = {
   bongacams: 0.021,
   chaturbate: 0.05,
   skyprivate: 1,
-  flirt4free: 0.05,
+  flirt4free: 0.03,
   xmodels: 1,
 }
 
@@ -39,16 +39,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "data.earnings must be array" }, { status: 400 })
   }
 
+  // Normalize: lowercase + replace spaces/dashes with underscores
+  // So "Mable Sparks" stored in DB matches "mable_sparks" sent by extension
+  // Strip @, lowercase, trim, spaces/dashes → underscores
+  // "@Mable Sparks" → "mable_sparks", "Mable Sparks" → "mable_sparks"
+  const normalize = (s: string) => s.replace(/^@+/, "").toLowerCase().trim().replace(/[\s\-]+/g, "_")
+
   for (const entry of earnings) {
-    const scraperUsername = (entry.username || entry.nick || "").toLowerCase().trim()
+    const scraperUsername = normalize(entry.username || entry.nick || "")
     if (!scraperUsername) continue
 
     // Find model by platform nick
     const profile = allProfiles?.find(p => {
       let nicks: Record<string, string> = {}
       try { nicks = typeof p.platform_nicks === "string" ? JSON.parse(p.platform_nicks) : (p.platform_nicks || {}) } catch {}
-      const nick = (nicks[platform] || "").toLowerCase().trim()
-      return nick === scraperUsername || (p.platform_nick || "").toLowerCase().trim() === scraperUsername
+      const nick = normalize(nicks[platform] || "")
+      return nick === scraperUsername || normalize(p.platform_nick || "") === scraperUsername
     })
 
     if (!profile) {
