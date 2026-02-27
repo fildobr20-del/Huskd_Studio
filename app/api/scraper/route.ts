@@ -28,6 +28,9 @@ export async function POST(request: Request) {
   }
 
   const today = new Date().toISOString().split("T")[0]
+  // Текущий месяц в формате 'YYYY-MM' — ключ для snapshot
+  const currentMonth = today.slice(0, 7)
+
   const results: any[] = []
 
   // Get all models to match usernames
@@ -39,10 +42,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "data.earnings must be array" }, { status: 400 })
   }
 
-  // Normalize: lowercase + replace spaces/dashes with underscores
-  // So "Mable Sparks" stored in DB matches "mable_sparks" sent by extension
-  // Strip @, lowercase, trim, spaces/dashes → underscores
-  // "@Mable Sparks" → "mable_sparks", "Mable Sparks" → "mable_sparks"
+  // Normalize: lowercase + replace spaces/dashes with underscores, strip @
+  // "Mable Sparks" → "mable_sparks",  "@Dari_Foxx" → "dari_foxx"
   const normalize = (s: string) => s.replace(/^@+/, "").toLowerCase().trim().replace(/[\s\-]+/g, "_")
 
   for (const entry of earnings) {
@@ -62,8 +63,8 @@ export async function POST(request: Request) {
       continue
     }
 
-    // Calculate USD amount
-    const usdAmount = entry.usdTotal || entry.usd || entry.amount || 
+    // Calculate USD amount from entry
+    const usdAmount = entry.usdTotal || entry.usd || entry.amount ||
       (entry.total ? Math.round(entry.total * (TOKEN_RATES[platform] || 0.05) * 100) / 100 : 0)
 
     if (usdAmount <= 0) {
@@ -73,22 +74,51 @@ export async function POST(request: Request) {
 
     const roundedAmount = Math.round(usdAmount * 100) / 100
 
-    // Get what's already saved this month for this platform
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0]
-    const { data: monthEntries } = await sb
-      .from("earnings_daily")
-      .select("amount")
+    // ====================================================================
+    // DELTA LOGIC: snapshot-based
+    // Используем таблицу platform_snapshots чтобы знать "точку отсчёта".
+    // • Первый запуск месяца → сохраняем baseline = текущая сумма, delta = 0
+    //   (чтобы не зачислять историю месяца до момента подключения системы)
+    // • Последующие запуски → delta = текущая сумма - последнее известное значение
+    // ====================================================================
+    const { data: snapshot, error: snapshotError } = await sb
+      .from("platform_snapshots")
+      .select("last_seen_usd")
       .eq("user_id", profile.id)
       .eq("platform", platform)
-      .gte("date", monthStart)
+      .eq("month", currentMonth)
+      .single()
 
-    const alreadySavedThisMonth = Math.round((monthEntries?.reduce((s, e) => s + Number(e.amount), 0) || 0) * 100) / 100
+    if (snapshotError?.code === "PGRST116" || !snapshot) {
+      // Первый запуск этого месяца — устанавливаем baseline, не записываем заработки
+      await sb.from("platform_snapshots").insert({
+        user_id: profile.id,
+        platform,
+        month: currentMonth,
+        last_seen_usd: roundedAmount,
+        updated_at: new Date().toISOString(),
+      })
+      results.push({
+        username: scraperUsername,
+        note: "baseline set (first sync this month)",
+        baseline: roundedAmount,
+      })
+      continue
+    }
 
-    // Delta = scraper's monthly total - what we already saved
-    const delta = Math.round((roundedAmount - alreadySavedThisMonth) * 100) / 100
+    const lastSeen = Math.round(Number(snapshot.last_seen_usd) * 100) / 100
+    const delta = Math.round((roundedAmount - lastSeen) * 100) / 100
 
     if (delta > 0.01) {
-      // Upsert today's entry
+      // Обновляем snapshot
+      await sb
+        .from("platform_snapshots")
+        .update({ last_seen_usd: roundedAmount, updated_at: new Date().toISOString() })
+        .eq("user_id", profile.id)
+        .eq("platform", platform)
+        .eq("month", currentMonth)
+
+      // Upsert в earnings_daily
       const { data: existing } = await sb
         .from("earnings_daily")
         .select("id, amount")
@@ -102,20 +132,41 @@ export async function POST(request: Request) {
         await sb.from("earnings_daily").update({ amount: newAmount }).eq("id", existing.id)
       } else {
         await sb.from("earnings_daily").insert({
-          user_id: profile.id, date: today, amount: delta, platform
+          user_id: profile.id,
+          date: today,
+          amount: delta,
+          platform,
         })
       }
 
-      // Recalculate lifetime
+      // Пересчитываем lifetime
       const { data: totals } = await sb.from("earnings_daily").select("amount").eq("user_id", profile.id)
       const total = Math.round((totals?.reduce((s, e) => s + Number(e.amount), 0) || 0) * 100) / 100
       await sb.from("profiles").update({ total_lifetime_earnings: total }).eq("id", profile.id)
 
-      results.push({ username: scraperUsername, delta, total: roundedAmount, saved: alreadySavedThisMonth })
+      results.push({
+        username: scraperUsername,
+        delta,
+        current: roundedAmount,
+        lastSeen,
+        saved: delta,
+      })
     } else {
-      results.push({ username: scraperUsername, note: "no new earnings", total: roundedAmount, saved: alreadySavedThisMonth })
+      results.push({
+        username: scraperUsername,
+        note: "no new earnings",
+        current: roundedAmount,
+        lastSeen,
+        delta,
+      })
     }
   }
 
-  return NextResponse.json({ success: true, platform, processed: results.length, results, timestamp: new Date().toISOString() })
+  return NextResponse.json({
+    success: true,
+    platform,
+    processed: results.length,
+    results,
+    timestamp: new Date().toISOString(),
+  })
 }

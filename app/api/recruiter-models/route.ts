@@ -45,6 +45,15 @@ export async function GET(request: Request) {
     const totalModelEarnings = models?.reduce((sum, m) => sum + (m.total_lifetime_earnings || 0), 0) || 0
     const recruiterCommission = Math.round(totalModelEarnings * commissionRate * 100) / 100
 
+    // Subtract already-paid commissions to get current (unpaid) balance
+    const { data: recruiterPayouts } = await supabaseAdmin
+      .from("payouts")
+      .select("amount")
+      .eq("user_id", targetId)
+      .eq("platform", "commission")
+    const totalPaidOut = Math.round((recruiterPayouts?.reduce((s, p) => s + (p.amount || 0), 0) || 0) * 100) / 100
+    const currentBalance = Math.max(0, Math.round((recruiterCommission - totalPaidOut) * 100) / 100)
+
     return NextResponse.json({
       models: models?.map(m => ({
         id: m.id,
@@ -58,7 +67,9 @@ export async function GET(request: Request) {
       totalModels: models?.length || 0,
       activeModels: activeModels.length,
       totalModelEarnings,
-      recruiterCommission,
+      recruiterCommission,   // gross lifetime commission (for Lifetime Earnings)
+      currentBalance,        // commission minus already-paid (for Current Balance)
+      totalPaidOut,
       commissionPercent: Math.round(commissionRate * 100),
     })
   } catch {

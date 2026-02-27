@@ -16,22 +16,24 @@ export function StatsCards({ ghostQuery = "" }: { ghostQuery?: string }) {
     fetch(`/api/recruiter-models${ghostQuery}`)
       .then((r) => r.json())
       .then((d) => {
-        setCommission(d.recruiterCommission || 0)
+        // currentBalance = gross commission minus already paid out (new field)
+        // Fall back to recruiterCommission if currentBalance not yet in response
+        setCommission(d.currentBalance ?? d.recruiterCommission ?? 0)
         setCommRate(d.commissionPercent || 10)
         setModelCount(d.totalModels || 0)
         setLoading(false)
 
-        // Update lifetime
+        // Lifetime Earnings tracks gross commission (never decreases on payout)
+        const grossCommission = d.recruiterCommission || 0
         const supabase = createClient()
         supabase.auth.getUser().then(({ data: { user } }) => {
           if (user) {
             supabase.from("profiles").select("total_lifetime_earnings").eq("id", user.id).single().then(({ data: prof }) => {
               const current = prof?.total_lifetime_earnings || 0
-              const newVal = d.recruiterCommission || 0
-              if (newVal > current) {
-                supabase.from("profiles").update({ total_lifetime_earnings: newVal }).eq("id", user.id)
+              if (grossCommission > current) {
+                supabase.from("profiles").update({ total_lifetime_earnings: grossCommission }).eq("id", user.id)
               }
-              setLifetime(Math.max(current, newVal))
+              setLifetime(Math.max(current, grossCommission))
             })
           }
         })

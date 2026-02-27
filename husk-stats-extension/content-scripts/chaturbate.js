@@ -1,7 +1,10 @@
 // ============================================================
-// Husk Label — Chaturbate v1.6
+// Husk Label — Chaturbate v1.7
 // Прямой fetch на affiliates/stats с правильными параметрами
 // stats_breakdown=sub_account__username (двойной _)
+// v1.7: ищем конкретную таблицу Sub Account|Tokens|Payout
+//       фильтруем строку Total, читаем колонку Tokens точно
+//       collectAffiliateStats() всегда первый (полный месяц = стабильный cumulative)
 // ============================================================
 
 ;(function () {
@@ -37,58 +40,58 @@
     keys.forEach(k => extractFromObj(obj[k], out, depth + 1))
   }
 
-  // ---- Парсинг HTML таблицы ----
-  function parseHtmlTable(html) {
-    const doc = new DOMParser().parseFromString(html, "text/html")
+  // ---- Извлечь данные из конкретной таблицы Sub Account|Tokens|Payout ----
+  // Работает и с DOMParser (из fetch) и с document
+  function extractFromTables(root) {
     const entries = []
+    const seen = new Set()
+    const tables = root.querySelectorAll("table")
 
-    // Ищем таблицу с данными
-    const tables = doc.querySelectorAll("table")
     for (const table of tables) {
       const rows = Array.from(table.querySelectorAll("tr"))
       if (rows.length < 2) continue
 
-      // Определяем индексы колонок из заголовка
-      const header = rows[0]
-      const ths = Array.from(header.querySelectorAll("th, td")).map(el => el.textContent.trim().toLowerCase())
+      const ths = Array.from(rows[0].querySelectorAll("th,td"))
+        .map(el => el.textContent.trim().toLowerCase())
 
-      let usernameIdx = ths.findIndex(t => t.includes("username") || t.includes("account") || t.includes("user"))
-      let tokensIdx   = ths.findIndex(t => t.includes("token") || t.includes("earning") || t.includes("revenue"))
+      // Ищем КОНКРЕТНО таблицу с Sub Account + Tokens
+      // Ищем ТОЧНО таблицу "Sub Account | Tokens | Payout"
+      // НЕ "Tokens Earned" (другая таблица с трафиком) — только "Tokens"
+      const subAccIdx = ths.findIndex(t => t === "sub account")
+      const tokensIdx = ths.findIndex(t => t === "tokens")
 
-      if (usernameIdx === -1) usernameIdx = 0
-      if (tokensIdx === -1) {
-        // Берём последнюю числовую колонку
-        tokensIdx = ths.length - 1
-      }
+      if (subAccIdx === -1 || tokensIdx === -1) continue // не та таблица
 
-      console.log(`[HuskLabel] CB table headers:`, ths, `| usernameIdx=${usernameIdx} tokensIdx=${tokensIdx}`)
+      console.log(`[HuskLabel] CB: нашли таблицу [${ths.join("|")}] subAcc=${subAccIdx} tok=${tokensIdx}`)
 
       for (let i = 1; i < rows.length; i++) {
         const cells = Array.from(rows[i].querySelectorAll("td"))
         if (cells.length < 2) continue
 
-        const username = cells[usernameIdx]?.textContent.trim().toLowerCase()
-        if (!username || !username.match(/^[a-z][a-z0-9_]{1,29}$/i)) continue
+        const username = cells[subAccIdx]?.textContent.trim().toLowerCase()
+        // Пропускаем пустые, "total", невалидные имена
+        if (!username || username === "total" || !/^[a-z][a-z0-9_]{1,29}$/.test(username)) continue
+        if (seen.has(username)) continue
+        seen.add(username)
 
-        // Ищем максимальное число в строке (токены)
-        let maxTokens = 0
-        cells.forEach((cell, idx) => {
-          if (idx === usernameIdx) return
-          const n = parseFloat(cell.textContent.replace(/[^0-9.]/g, ""))
-          if (n > maxTokens) maxTokens = n
-        })
-
-        if (maxTokens > 0) {
-          const usd = Math.round(maxTokens * TOKEN_RATE * 100) / 100
+        const tokens = parseInt((cells[tokensIdx]?.textContent.trim() || "0").replace(/[^0-9]/g, ""), 10)
+        if (tokens > 0) {
+          const usd = Math.round(tokens * TOKEN_RATE * 100) / 100
           entries.push({ username, amount: usd })
-          console.log(`[HuskLabel] CB: ${username} → ${maxTokens} tokens → $${usd}`)
+          console.log(`[HuskLabel] CB: ${username} → ${tokens} tk → $${usd}`)
         }
       }
 
-      if (entries.length > 0) break // нашли данные
+      if (entries.length > 0) break // нашли нужную таблицу
     }
 
     return entries
+  }
+
+  // ---- Парсинг HTML таблицы (из fetch) ----
+  function parseHtmlTable(html) {
+    const doc = new DOMParser().parseFromString(html, "text/html")
+    return extractFromTables(doc)
   }
 
   // ---- Основной сбор через прямой fetch ----
@@ -141,51 +144,11 @@
     }
   }
 
-  // ---- Сбор с текущей страницы если уже загружена таблица ----
-  async function collectFromCurrentPage() {
-    const entries = []
-    const rows = document.querySelectorAll("table tr")
-
-    if (rows.length < 2) return false
-
-    const header = rows[0]
-    const ths = Array.from(header.querySelectorAll("th, td")).map(el => el.textContent.trim().toLowerCase())
-    let usernameIdx = ths.findIndex(t => t.includes("username") || t.includes("account"))
-    let tokensIdx   = ths.findIndex(t => t.includes("token") || t.includes("earning"))
-    if (usernameIdx === -1) usernameIdx = 0
-
-    for (let i = 1; i < rows.length; i++) {
-      const cells = Array.from(rows[i].querySelectorAll("td"))
-      if (cells.length < 2) continue
-      const username = cells[usernameIdx]?.textContent.trim().toLowerCase()
-      if (!username?.match(/^[a-z][a-z0-9_]{1,29}$/i)) continue
-
-      let maxN = 0
-      cells.forEach((cell, idx) => {
-        if (idx === usernameIdx) return
-        const n = parseFloat(cell.textContent.replace(/[^0-9.]/g, ""))
-        if (n > maxN) maxN = n
-      })
-      if (maxN > 0) entries.push({ username, amount: Math.round(maxN * TOKEN_RATE * 100) / 100 })
-    }
-
-    if (entries.length > 0) {
-      console.log(`[HuskLabel] CB DOM: ${entries.length} записей`)
-      window.HuskLabel.sendBatchStats(PLATFORM, entries)
-      return true
-    }
-    return false
-  }
-
   async function collect() {
     if (!location.hostname.includes("chaturbate.com")) return
-    console.log("[HuskLabel] Chaturbate: начало сбора...")
+    console.log("[HuskLabel] Chaturbate v1.7: начало сбора...")
 
-    // Сначала пробуем текущую страницу (может уже есть таблица)
-    const domOk = await collectFromCurrentPage()
-    if (domOk) return
-
-    // Иначе делаем прямой fetch с правильными параметрами
+    // Всегда fetchим полный месяц для стабильного cumulative (нужно для snapshot-delta логики)
     const ok = await collectAffiliateStats()
     if (!ok) {
       console.log("[HuskLabel] CB: нет данных. Убедитесь что вы на chaturbate.com/affiliates/stats/")
