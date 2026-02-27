@@ -1,5 +1,5 @@
 // ============================================================
-// Husk Label — Flirt4Free v2.6
+// Husk Label — Flirt4Free v2.7
 // Страница: studios.flirt4free.com/broadcasters/stats.php
 //
 // Стратегии:
@@ -55,12 +55,11 @@
       // Верхнеуровневая запись — это агрегат студии (huskies и т.п.) — пропускаем.
       if (nameKey && credKey && inArray) {
         const rawName = String(obj[nameKey]).trim()
-        // Strip leading @ if present (F4F stores nicks as @username)
-        const username = (rawName.startsWith("@") ? rawName.slice(1) : rawName).toLowerCase()
+        // Strip leading @, lowercase, spaces/dashes → underscores (normalize like API)
+        const username = rawName.replace(/^@+/, "").toLowerCase().trim().replace(/[\s\-]+/g, "_")
         const raw = Number(obj[credKey])
         if (username.length > 1 && raw > 0 &&
             !/^\d+$/.test(username) &&
-            !username.includes(" ") &&
             /^[a-z][a-z0-9_]{1,39}$/.test(username)) {
           const usd = raw > 50 ? Math.round(raw * TOKEN_RATE * 100) / 100 : raw
           if (!entries.find(e => e.username === username)) {
@@ -197,16 +196,15 @@
       let username = null, usernameIdx = -1
       for (let i = 0; i < cells.length; i++) {
         const t = cells[i].textContent.trim()
-        const tLow = t.toLowerCase().replace(/\s+/g, "_")
-        if (/^[a-zA-Z][a-zA-Z0-9_ ]{1,39}$/.test(t) && !/^\d+$/.test(t)) {
+        // Normalize: strip @, lowercase, spaces/dashes → underscores
+        const tNorm = t.replace(/^@+/, "").toLowerCase().trim().replace(/[\s\-]+/g, "_")
+        if (/^[a-zA-Z][a-zA-Z0-9_ .-]{1,39}$/.test(t) && !/^\d+$/.test(t)) {
           const skip = ["total","credits","earned","model","broadcaster","stats","rank","week","month","period","date"]
           // Reject week/date labels like "week_of_nov_29th", "dec_12th", etc.
-          const isDateLabel = /^week_of_|^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)_/i.test(tLow) ||
-                              /_\d{1,2}(st|nd|rd|th)$/.test(tLow)
-          if (!skip.includes(tLow) && !isDateLabel) {
-            // Strip leading @ if present
-            const cleaned = t.startsWith("@") ? t.slice(1) : t
-            username = cleaned.toLowerCase().replace(/\s+/g, "_")
+          const isDateLabel = /^week_of_|^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)_/i.test(tNorm) ||
+                              /_\d{1,2}(st|nd|rd|th)$/.test(tNorm)
+          if (!skip.includes(tNorm) && !isDateLabel) {
+            username = tNorm
             usernameIdx = i
             break
           }
@@ -258,7 +256,7 @@
     // 2. Из URL пути
     if (!username) {
       const m = location.pathname.match(/\/([a-zA-Z0-9_]{3,40})\/stats|\/stats\/([a-zA-Z0-9_]{3,40})/)
-      if (m) username = (m[1] || m[2]).toLowerCase()
+      if (m) username = (m[1] || m[2]).toLowerCase().replace(/[\s\-]+/g, "_")
     }
 
     // 3. Из DOM — ищем имя рядом с "TOP PERFORMER" или в заголовке
@@ -310,7 +308,7 @@
   // ---- Главная функция ----
   async function collect() {
     if (!location.hostname.includes("flirt4free.com")) return
-    console.log(`[HuskLabel] Flirt4Free v2.0 — ${location.href}`)
+    console.log(`[HuskLabel] Flirt4Free v2.7 — ${location.href}`)
 
     // Стратегия 1: XHR из performance entries
     const perfOk = await collectViaPerformance()

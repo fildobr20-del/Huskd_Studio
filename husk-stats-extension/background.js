@@ -48,7 +48,8 @@ function isMonitoredSite(url) {
     url.includes("skyprivate.com") ||
     url.includes("flirt4free.com") ||
     url.includes("xmodels.com") ||
-    url.includes("chaturbate.com")
+    url.includes("chaturbate.com") ||
+    url.includes("fansly.com")
   )
 }
 
