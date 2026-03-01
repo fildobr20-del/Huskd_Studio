@@ -46,6 +46,11 @@ function RecruiterInner() {
         <div className="mb-8 lg:mb-10">
           <h1 className="text-balance text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Welcome back</h1>
           <p className="mt-1 text-sm text-muted-foreground">Обзор вашей рекрутерской активности</p>
+          {isTeacher && !ghostId && (
+            <Link href="/dashboard/teacher-recruiter" className="mt-3 inline-flex items-center gap-2 rounded-full bg-violet-600/10 border border-violet-600/20 px-4 py-2 text-sm font-medium text-violet-400 hover:bg-violet-600/20 transition">
+              <GraduationCap className="h-4 w-4" /> Панель учителя
+            </Link>
+          )}
         </div>
         <section className="mb-8 lg:mb-10"><StatsCards ghostQuery={gq} /></section>
         <section className="mb-8"><LevelProgress role="recruiter" ghostQuery={gq} /></section>

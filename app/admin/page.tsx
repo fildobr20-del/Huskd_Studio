@@ -136,7 +136,7 @@ export default function AdminPage() {
                         <input type="date" value={row.date} onChange={e => updateRow(i, "date", e.target.value)} className="flex-1 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
                         <input type="number" step="0.01" value={row.amount} onChange={e => updateRow(i, "amount", e.target.value)} placeholder="$ gross" className="w-28 rounded-lg border border-border bg-background/50 py-2 px-3 text-sm text-foreground" />
                         <select value={row.platform} onChange={e => updateRow(i, "platform", e.target.value)} className="rounded-lg border border-border bg-background/50 py-2 px-2 text-xs text-foreground">
-                          {["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels"].map(p => <option key={p} value={p}>{p}</option>)}
+                          {["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels","fansly","streammodels"].map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                         {bulkRows.length > 1 && <button onClick={() => setBulkRows(bulkRows.filter((_, idx) => idx !== i))} className="text-red-400/50 hover:text-red-400"><X className="h-4 w-4" /></button>}
                       </div>
@@ -243,7 +243,7 @@ function QuickActions({ userId, models, headers, setMessage, onRefresh }: { user
   const [comm, setComm] = useState("")
   const [cbUrl, setCbUrl] = useState("")
   const [nicks, setNicks] = useState<Record<string, string>>({})
-  const platforms = ["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels"]
+  const platforms = ["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels","fansly","streammodels"]
 
   // Reset when user changes
   useEffect(() => {
@@ -324,8 +324,8 @@ function PayoutsTab({ models, headers, setMessage, label, isRecruiter }: { model
   const [customAmount, setCustomAmount] = useState("")
   const [customPlatform, setCustomPlatform] = useState(isRecruiter ? "commission" : "stripchat")
   const [showAll, setShowAll] = useState(false)
-  const platforms = isRecruiter ? ["commission"] : ["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels"]
-  const pL: Record<string, string> = { chaturbate: "CB", stripchat: "SC", bongacams: "BC", skyprivate: "SP", flirt4free: "F4F", xmodels: "XM", commission: "Commission" }
+  const platforms = isRecruiter ? ["commission"] : ["chaturbate","stripchat","bongacams","skyprivate","flirt4free","xmodels","fansly","streammodels"]
+  const pL: Record<string, string> = { chaturbate: "CB", stripchat: "SC", bongacams: "BC", skyprivate: "SP", flirt4free: "F4F", xmodels: "XM", fansly: "FL", streammodels: "SM", commission: "Commission" }
 
   useEffect(() => { if (selected) fetch(`/api/admin/payouts?userId=${selected}`, { headers }).then(r => r.json()).then(d => setPayouts(d.payouts || [])) }, [selected])
   useEffect(() => { fetch(`/api/admin/payouts?all=true`, { headers }).then(r => r.json()).then(d => setAllPayouts(d.payouts || [])) }, [])
@@ -532,6 +532,8 @@ function DataTab({ models, headers }: { models: ModelData[]; headers: Record<str
     skyprivate: "bg-blue-500/20 text-blue-400",
     flirt4free: "bg-purple-500/20 text-purple-400",
     xmodels: "bg-teal-500/20 text-teal-400",
+    fansly: "bg-emerald-500/20 text-emerald-400",
+    streammodels: "bg-yellow-500/20 text-yellow-400",
     commission: "bg-amber-500/20 text-amber-400",
   }
 

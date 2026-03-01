@@ -12,7 +12,7 @@ export async function PUT(request: Request) {
 
     const { platform_nicks } = await request.json()
     const nicks = typeof platform_nicks === "string" ? JSON.parse(platform_nicks) : platform_nicks
-    const primaryNick = nicks.chaturbate || nicks.stripchat || nicks.bongacams || nicks.flirt4free || ""
+    const primaryNick = nicks.chaturbate || nicks.stripchat || nicks.bongacams || nicks.flirt4free || nicks.fansly || nicks.streammodels || ""
 
     const { error } = await supabase
       .from("profiles")

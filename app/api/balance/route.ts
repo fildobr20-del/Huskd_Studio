@@ -8,6 +8,7 @@ import { createClient } from "@supabase/supabase-js"
 const PLATFORM_NAMES: Record<string, string> = {
   chaturbate: "Chaturbate", stripchat: "StripChat", bongacams: "BongaCams",
   skyprivate: "SkyPrivate", flirt4free: "Flirt4Free", xmodels: "XModels",
+  fansly: "Fansly", streammodels: "StreamModels",
 }
 
 export async function GET(request: Request) {
@@ -94,27 +95,45 @@ export async function GET(request: Request) {
     const paidByPlatform: Record<string, number> = {}
     payouts?.forEach(p => { paidByPlatform[p.platform] = (paidByPlatform[p.platform] || 0) + p.amount })
 
-    const allPlatforms = ["chaturbate", "stripchat", "bongacams", "skyprivate", "flirt4free", "xmodels"]
+    // Platform-specific model share rates (50% for Fansly/StreamModels, 70% default)
+    const PLATFORM_SHARE: Record<string, number> = {
+      fansly: 0.5,
+      streammodels: 0.5,
+    }
+    const DEFAULT_SHARE = 0.7
+
+    const allPlatforms = ["chaturbate", "stripchat", "bongacams", "skyprivate", "flirt4free", "xmodels", "fansly", "streammodels"]
     const breakdown: { name: string; amount: number; tokens: number }[] = []
     let totalBalance = 0
+    let totalModelShare = 0
 
     for (const p of allPlatforms) {
       const saved = savedAllByPlatform[p] || 0
       const paid = paidByPlatform[p] || 0
       const balance = Math.round(Math.max(0, saved - paid) * 100) / 100
       totalBalance += balance
+      const shareRate = PLATFORM_SHARE[p] ?? DEFAULT_SHARE
+      const modelPlatformShare = Math.round(balance * shareRate * 100) / 100
+      totalModelShare += modelPlatformShare
 
       if (saved > 0 || nicks[p]) {
         breakdown.push({
           name: PLATFORM_NAMES[p] || p,
-          amount: Math.round(balance * 0.7 * 100) / 100,
+          amount: modelPlatformShare,
           tokens: 0,
         })
       }
     }
 
-    const modelShare = Math.round(totalBalance * 0.7 * 100) / 100
-    const lifetimeModelShare = Math.round(lifetimeGross * 0.7 * 100) / 100
+    const modelShare = Math.round(totalModelShare * 100) / 100
+
+    // Lifetime model share: per-platform rates applied to all-time earnings
+    let lifetimeModelShare = 0
+    for (const [platform, amount] of Object.entries(savedAllByPlatform)) {
+      const shareRate = PLATFORM_SHARE[platform] ?? DEFAULT_SHARE
+      lifetimeModelShare += amount * shareRate
+    }
+    lifetimeModelShare = Math.round(lifetimeModelShare * 100) / 100
 
     if (!ghostId && lifetimeGross > 0) {
       await sb.from("profiles").update({ total_lifetime_earnings: Math.round(lifetimeGross * 100) / 100 }).eq("id", uid)

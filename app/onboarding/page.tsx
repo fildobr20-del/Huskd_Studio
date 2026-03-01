@@ -12,6 +12,8 @@ const platforms = [
   { id: "skyprivate", name: "SkyPrivate", color: "#3498db" },
   { id: "flirt4free", name: "Flirt4Free", color: "#e91e8c" },
   { id: "xmodels", name: "XModels", color: "#00bcd4" },
+  { id: "fansly", name: "Fansly", color: "#00c2a8" },
+  { id: "streammodels", name: "StreamModels", color: "#f59e0b" },
 ]
 
 export default function OnboardingPage() {

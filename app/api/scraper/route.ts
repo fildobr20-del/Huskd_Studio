@@ -10,6 +10,8 @@ const TOKEN_RATES: Record<string, number> = {
   skyprivate: 1,
   flirt4free: 0.03,
   xmodels: 1,
+  fansly: 1,
+  streammodels: 1,
 }
 
 export async function POST(request: Request) {

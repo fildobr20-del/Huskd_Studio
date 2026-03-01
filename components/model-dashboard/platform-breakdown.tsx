@@ -15,6 +15,8 @@ const platformColors: Record<string, { bg: string; text: string; bar: string }> 
   SkyPrivate: { bg: "bg-blue-500/10", text: "text-blue-400", bar: "bg-blue-500" },
   "Flirt4Free": { bg: "bg-pink-500/10", text: "text-pink-400", bar: "bg-pink-500" },
   XModels: { bg: "bg-cyan-500/10", text: "text-cyan-400", bar: "bg-cyan-500" },
+  Fansly: { bg: "bg-teal-500/10", text: "text-teal-400", bar: "bg-teal-500" },
+  StreamModels: { bg: "bg-amber-500/10", text: "text-amber-400", bar: "bg-amber-500" },
 };
 
 const defaultPlatforms: PlatformData[] = [
@@ -24,6 +26,8 @@ const defaultPlatforms: PlatformData[] = [
   { name: "SkyPrivate", amount: 0 },
   { name: "Flirt4Free", amount: 0 },
   { name: "XModels", amount: 0 },
+  { name: "Fansly", amount: 0 },
+  { name: "StreamModels", amount: 0 },
 ];
 
 export function PlatformBreakdown({ ghostQuery = "" }: { ghostQuery?: string }) {
@@ -85,7 +89,7 @@ export function PlatformBreakdown({ ghostQuery = "" }: { ghostQuery?: string }) 
         })}
       </div>
       <p className="mt-3 text-[10px] text-muted-foreground/40 text-center">
-        CB, SC, BC — ежедневно · F4F, SP, XM — по вторникам
+        CB, SC, BC — ежедневно · F4F, SP, XM, FL, SM — по вторникам
       </p>
     </div>
   );
